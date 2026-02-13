@@ -15,7 +15,10 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "cocotrack"
+            name: "cocotrack",
+            resources: [
+                .process("Resources")
+            ]
         )
     ]
 )

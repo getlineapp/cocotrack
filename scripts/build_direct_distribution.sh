@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Add path to xcrun/actool if needed, usually in /usr/bin or /usr/bin/xcrun
+
+
 APP_NAME="Cocotrack"
 BUNDLE_ID="me.cocotrack.app"
 EXECUTABLE_NAME="cocotrack"
@@ -12,6 +15,7 @@ BUILD_DIR="$ROOT_DIR/.build"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 ZIP_PATH="$DIST_DIR/$APP_NAME-macOS.zip"
 DMG_PATH="$DIST_DIR/$APP_NAME-macOS.dmg"
@@ -36,6 +40,16 @@ mkdir -p "$MACOS_DIR"
 cp "$RELEASE_BIN" "$MACOS_DIR/$EXECUTABLE_NAME"
 chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
 
+mkdir -p "$RESOURCES_DIR"
+
+echo "[2.5/6] Compiling Assets"
+if [[ -d "$ROOT_DIR/Sources/cocotrack/Resources/cocotrack.xcassets" ]]; then
+    xcrun actool "$ROOT_DIR/Sources/cocotrack/Resources/cocotrack.xcassets" --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target "$MIN_MACOS_VERSION" --app-icon AppIcon --output-partial-info-plist "$BUILD_DIR/assets-Info.plist" >/dev/null
+    echo "Compiled Assets.car"
+else
+    echo "Warning: No asset catalog found at Sources/cocotrack/Resources/cocotrack.xcassets"
+fi
+
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -45,6 +59,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>en</string>
   <key>CFBundleExecutable</key>
   <string>$EXECUTABLE_NAME</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleInfoDictionaryVersion</key>
