@@ -51,7 +51,7 @@ struct ContentView: View {
                 Text("Cocotrack")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
 
-                Text("Timer-first workflow. Auto odswiezanie historii co 30s.")
+                Text(L10n.appSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -70,7 +70,7 @@ struct ContentView: View {
             Button {
                 showSettings = true
             } label: {
-                Label("Ustawienia", systemImage: "gearshape")
+                Label(L10n.settings, systemImage: "gearshape")
             }
             .buttonStyle(.borderedProminent)
             .tint(Color(red: 0.13, green: 0.27, blue: 0.48))
@@ -83,7 +83,7 @@ struct ContentView: View {
                 .fill(appState.isConnected ? Color.green : (appState.isConfigured ? Color.orange : Color.gray))
                 .frame(width: 9, height: 9)
 
-            Text(appState.isConnected ? "Polaczono" : (appState.isConfigured ? "Wymaga polaczenia" : "Brak konfiguracji"))
+            Text(appState.isConnected ? L10n.statusConnected : (appState.isConfigured ? L10n.statusNeedsConnection : L10n.statusNotConfigured))
                 .font(.caption.weight(.semibold))
         }
         .padding(.horizontal, 12)
@@ -98,7 +98,7 @@ struct ContentView: View {
     private var timerHero: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(appState.isTracking ? "Aktywny timer" : "Nowy timer")
+                Text(appState.isTracking ? L10n.timerActive : L10n.timerNew)
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.85))
 
@@ -130,11 +130,11 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
             } else {
-                Text("Wpisz opis i kliknij Start albo odpal gotowy timer z listy nizej.")
+                Text(L10n.timerHint)
                     .foregroundStyle(.white.opacity(0.82))
 
                 HStack(spacing: 10) {
-                    TextField("Nad czym pracujesz?", text: $customDescription)
+                    TextField(L10n.timerPlaceholder, text: $customDescription)
                         .textFieldStyle(.plain)
                         .padding(10)
                         .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -170,9 +170,9 @@ struct ContentView: View {
     }
 
     private var favoritesSection: some View {
-        SectionShell(title: "Ulubione") {
+        SectionShell(title: L10n.favorites) {
             if appState.favoriteTemplates.isEmpty {
-                Text("Przypnij timer gwiazdka z historii, a bedzie zawsze na gorze.")
+                Text(L10n.favoritesEmpty)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -183,7 +183,7 @@ struct ContentView: View {
                     ForEach(appState.favoriteTemplates) { template in
                         FavoriteRow(
                             title: template.description,
-                            subtitle: template.lastUsed == .distantPast ? "Brak ostatniego uzycia" : "Ostatnio: \(template.lastUsed.shortDateTime)",
+                            subtitle: template.lastUsed == .distantPast ? L10n.noLastUse : L10n.lastUsed(template.lastUsed.shortDateTime),
                             onUnfavorite: { appState.toggleFavorite(description: template.description) },
                             onStart: { Task { await appState.startTimer(using: template.description) } },
                             isStartDisabled: appState.isTracking
@@ -195,9 +195,9 @@ struct ContentView: View {
     }
 
     private var quickStartSection: some View {
-        SectionShell(title: "Szybki start") {
+        SectionShell(title: L10n.quickStart) {
             if appState.quickStartTemplates.isEmpty {
-                Text("Brak historii. Po kilku wpisach pojawia sie tu gotowe timery.")
+                Text(L10n.quickStartEmpty)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -218,9 +218,9 @@ struct ContentView: View {
     }
 
     private var recentEntriesSection: some View {
-        SectionShell(title: "Ostatnie wpisy") {
+        SectionShell(title: L10n.recentEntries) {
             if groupedRecentEntries.isEmpty {
-                Text("Brak wpisow do wyswietlenia.")
+                Text(L10n.recentEntriesEmpty)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -286,10 +286,10 @@ struct ContentView: View {
         }
 
         var result: [RecentEntrySection] = []
-        if !today.isEmpty { result.append(RecentEntrySection(title: "Dzis", entries: today)) }
-        if !yesterday.isEmpty { result.append(RecentEntrySection(title: "Wczoraj", entries: yesterday)) }
-        if !thisWeek.isEmpty { result.append(RecentEntrySection(title: "W tym tygodniu", entries: thisWeek)) }
-        if !older.isEmpty { result.append(RecentEntrySection(title: "Starsze", entries: older)) }
+        if !today.isEmpty { result.append(RecentEntrySection(title: L10n.today, entries: today)) }
+        if !yesterday.isEmpty { result.append(RecentEntrySection(title: L10n.yesterday, entries: yesterday)) }
+        if !thisWeek.isEmpty { result.append(RecentEntrySection(title: L10n.thisWeek, entries: thisWeek)) }
+        if !older.isEmpty { result.append(RecentEntrySection(title: L10n.older, entries: older)) }
 
         return result
     }
@@ -305,14 +305,14 @@ struct ContentView: View {
                     .controlSize(.small)
             }
 
-            Text(appState.statusMessage.isEmpty ? "Gotowe" : appState.statusMessage)
+            Text(appState.statusMessage.isEmpty ? L10n.statusReady : appState.statusMessage)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
 
             Spacer()
 
-            Text("Auto refresh: 30s")
+            Text(L10n.autoRefresh)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -430,11 +430,11 @@ private struct RecentEntryRow: View {
 
     private var description: String {
         let value = (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return value.isEmpty ? "Bez opisu" : value
+        return value.isEmpty ? L10n.noDescription : value
     }
 
     private var timeRange: String {
-        entry.timeInterval.start.shortDateTime + " - " + (entry.timeInterval.end?.shortDateTime ?? "w toku")
+        entry.timeInterval.start.shortDateTime + " - " + (entry.timeInterval.end?.shortDateTime ?? L10n.inProgress)
     }
 
     var body: some View {
@@ -465,7 +465,7 @@ private struct RecentEntryRow: View {
             .disabled(isStartDisabled)
 
             Menu {
-                Button("Edytuj") {
+                Button(L10n.edit) {
                     onEdit()
                 }
             } label: {
@@ -489,10 +489,10 @@ private struct SettingsSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Ustawienia Clockify")
+            Text(L10n.settingsTitle)
                 .font(.title3.weight(.semibold))
 
-            Text("Konfiguracja API jest schowana tutaj, zeby glowny ekran byl skupiony na timerach.")
+            Text(L10n.settingsSubtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -502,17 +502,17 @@ private struct SettingsSheet: View {
             TextField("Base URL", text: $appState.baseURL)
                 .textFieldStyle(.roundedBorder)
 
-            TextField("Workspace ID (opcjonalnie)", text: $appState.workspaceOverride)
+            TextField(L10n.settingsWorkspaceHint, text: $appState.workspaceOverride)
                 .textFieldStyle(.roundedBorder)
 
             HStack {
-                Button("Zamknij") {
+                Button(L10n.settingsClose) {
                     dismiss()
                 }
 
                 Spacer()
 
-                Button("Zapisz i polacz") {
+                Button(L10n.settingsSaveConnect) {
                     Task {
                         await appState.connectAndRefresh()
                     }
@@ -522,7 +522,7 @@ private struct SettingsSheet: View {
             }
 
             if !appState.userName.isEmpty {
-                Text("User: \(appState.userName)")
+                Text(L10n.userLabel(appState.userName))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -560,26 +560,26 @@ private struct EntryEditSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Edycja wpisu")
+            Text(L10n.editEntryTitle)
                 .font(.headline)
 
-            TextField("Opis", text: $description)
+            TextField(L10n.editEntryDescription, text: $description)
                 .textFieldStyle(.roundedBorder)
 
             DatePicker("Start", selection: $start)
 
-            Toggle("Wpis ma czas zakonczenia", isOn: $hasEndDate)
+            Toggle(L10n.editEntryHasEnd, isOn: $hasEndDate)
 
             if hasEndDate {
-                DatePicker("Koniec", selection: $end)
+                DatePicker(L10n.editEntryEnd, selection: $end)
             }
 
             HStack {
                 Spacer()
-                Button("Anuluj") {
+                Button(L10n.editEntryCancel) {
                     dismiss()
                 }
-                Button("Zapisz") {
+                Button(L10n.editEntrySave) {
                     onSave(description, start, hasEndDate ? end : nil)
                     dismiss()
                 }

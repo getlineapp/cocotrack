@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "cocotrack",
+    defaultLocalization: "pl",
     platforms: [
         .macOS(.v13)
     ],

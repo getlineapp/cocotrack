@@ -1,0 +1,79 @@
+/* Top bar */
+"app.subtitle" = "Timer-first workflow. Auto odswiezanie historii co 30s.";
+"settings" = "Ustawienia";
+
+/* Connection pill */
+"status.connected" = "Polaczono";
+"status.needsConnection" = "Wymaga polaczenia";
+"status.notConfigured" = "Brak konfiguracji";
+
+/* Timer hero */
+"timer.active" = "Aktywny timer";
+"timer.new" = "Nowy timer";
+"timer.hint" = "Wpisz opis i kliknij Start albo odpal gotowy timer z listy nizej.";
+"timer.placeholder" = "Nad czym pracujesz?";
+
+/* Sections */
+"section.favorites" = "Ulubione";
+"section.favorites.empty" = "Przypnij timer gwiazdka z historii, a bedzie zawsze na gorze.";
+"section.quickStart" = "Szybki start";
+"section.quickStart.empty" = "Brak historii. Po kilku wpisach pojawia sie tu gotowe timery.";
+"section.recentEntries" = "Ostatnie wpisy";
+"section.recentEntries.empty" = "Brak wpisow do wyswietlenia.";
+
+/* Time grouping */
+"time.today" = "Dzis";
+"time.yesterday" = "Wczoraj";
+"time.thisWeek" = "W tym tygodniu";
+"time.older" = "Starsze";
+
+/* Entry details */
+"entry.noDescription" = "Bez opisu";
+"entry.inProgress" = "w toku";
+"entry.noLastUse" = "Brak ostatniego uzycia";
+"entry.lastUsed" = "Ostatnio: %@";
+"entry.edit" = "Edytuj";
+
+/* Status bar */
+"status.ready" = "Gotowe";
+"status.autoRefresh" = "Auto refresh: 30s";
+
+/* Settings sheet */
+"settings.title" = "Ustawienia Clockify";
+"settings.subtitle" = "Konfiguracja API jest schowana tutaj, zeby glowny ekran byl skupiony na timerach.";
+"settings.workspaceHint" = "Workspace ID (opcjonalnie)";
+"settings.close" = "Zamknij";
+"settings.saveConnect" = "Zapisz i polacz";
+"settings.userLabel" = "User: %@";
+
+/* Entry edit sheet */
+"editEntry.title" = "Edycja wpisu";
+"editEntry.description" = "Opis";
+"editEntry.hasEnd" = "Wpis ma czas zakonczenia";
+"editEntry.end" = "Koniec";
+"editEntry.cancel" = "Anuluj";
+"editEntry.save" = "Zapisz";
+
+/* AppState status messages */
+"appState.connectedAs" = "Polaczono jako %@.";
+"appState.timerStarted" = "Timer uruchomiony.";
+"appState.timerStopped" = "Timer zatrzymany.";
+"appState.dataRefreshed" = "Dane odswiezone.";
+"appState.entryUpdated" = "Wpis zaktualizowany.";
+"appState.connectFirst" = "Najpierw kliknij Polacz.";
+"appState.fillApiKey" = "Uzupelnij API key Clockify.";
+"appState.workspaceError" = "Nie udalo sie ustalic workspace ID.";
+
+/* Menu bar */
+"menu.timerActive" = "Timer aktywny";
+"menu.timerStopped" = "Timer zatrzymany";
+"menu.refresh" = "Odswiez";
+"menu.openApp" = "Otworz app";
+"menu.quit" = "Wyjdz";
+
+/* API errors */
+"api.error.invalidBaseURL" = "Niepoprawny URL API Clockify.";
+"api.error.missingData" = "Brak danych w odpowiedzi API.";
+"api.error.invalidResponse" = "Niepoprawna odpowiedz API.";
+"api.error.http" = "Clockify API error %d: %@";
+"api.error.unknown" = "Unknown API error";

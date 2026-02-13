@@ -10,6 +10,7 @@ A lightweight macOS menu bar app for [Clockify](https://clockify.me) time tracki
 - **Favorites** — pin frequently used timer descriptions for instant access
 - **Entry editing** — edit descriptions and timestamps of existing entries
 - **Auto-refresh** — entries sync from Clockify every 30 seconds
+- **Localized** — Polish (default) and English, follows your system language
 - **Zero dependencies** — pure Swift + SwiftUI, no third-party libraries
 
 ## Requirements
@@ -59,7 +60,11 @@ Sources/cocotrack/
 ├── ClockifyModels.swift     # Codable request/response types
 ├── Formatters.swift         # ISO 8601 date coding, display formatters
 ├── ContentView.swift        # Main window UI (timer, favorites, history)
-└── MenuBarView.swift        # Menu bar popover UI
+├── MenuBarView.swift        # Menu bar popover UI
+├── L10n.swift               # Type-safe localized string constants
+└── Resources/
+    ├── pl.lproj/Localizable.strings  # Polish (default)
+    └── en.lproj/Localizable.strings  # English
 ```
 
 The app is built with Swift concurrency (`async/await`) and SwiftUI. `AppState` is the single source of truth, shared to both UI surfaces via `@EnvironmentObject`. No Combine, no external frameworks.

@@ -7,7 +7,7 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(appState.isTracking ? "Timer aktywny" : "Timer zatrzymany")
+            Text(appState.isTracking ? L10n.menuTimerActive : L10n.menuTimerStopped)
                 .font(.headline)
 
             if appState.isTracking {
@@ -21,7 +21,7 @@ struct MenuBarView: View {
                 }
                 .buttonStyle(.borderedProminent)
             } else {
-                TextField("Opis", text: $appState.timerDraftDescription)
+                TextField(L10n.editEntryDescription, text: $appState.timerDraftDescription)
                     .textFieldStyle(.roundedBorder)
 
                 Button("Start") {
@@ -33,17 +33,17 @@ struct MenuBarView: View {
             Divider()
 
             HStack {
-                Button("Odswiez") {
+                Button(L10n.refresh) {
                     Task { await appState.refreshEntries() }
                 }
 
-                Button("Otworz app") {
+                Button(L10n.openApp) {
                     openWindow(id: "main")
                 }
 
                 Spacer()
 
-                Button("Wyjdz") {
+                Button(L10n.quit) {
                     NSApp.terminate(nil)
                 }
             }

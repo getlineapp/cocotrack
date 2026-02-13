@@ -112,7 +112,7 @@ final class AppState: ObservableObject {
             shortDescription = description
         }
 
-        return "\(shortDescription) \(elapsedText)"
+        return "\(shortDescription) [\(elapsedText)]"
     }
 
     var runningDescription: String {
@@ -121,7 +121,7 @@ final class AppState: ObservableObject {
             return value
         }
 
-        return "Bez opisu"
+        return L10n.noDescription
     }
 
     func connectAndRefresh() async {
@@ -133,7 +133,7 @@ final class AppState: ObservableObject {
 
             let resolvedWorkspace = resolvedWorkspaceId(user: user)
             guard let resolvedWorkspace else {
-                throw ClockifyAPIError.httpError(statusCode: 400, message: "Nie udalo sie ustalic workspace ID.")
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.workspaceError)
             }
 
             userId = user.id
@@ -145,7 +145,7 @@ final class AppState: ObservableObject {
 
             runningEntry = try await running
             recentEntries = try await recent
-            statusMessage = "Polaczono jako \(userName)."
+            statusMessage = L10n.connectedAs(userName)
 
             restartElapsedTaskIfNeeded()
             restartAutoRefreshIfNeeded()
@@ -160,7 +160,7 @@ final class AppState: ObservableObject {
 
             runningEntry = try await running
             recentEntries = try await recent
-            statusMessage = "Dane odswiezone."
+            statusMessage = L10n.dataRefreshed
 
             restartElapsedTaskIfNeeded()
         }
@@ -170,7 +170,7 @@ final class AppState: ObservableObject {
         await runLoadingTask {
             let context = try contextOrThrow()
             let text = timerDraftDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-            let description = text.isEmpty ? "Bez opisu" : text
+            let description = text.isEmpty ? L10n.noDescription : text
 
             _ = try await context.client.startTimer(
                 workspaceId: context.workspaceId,
@@ -179,7 +179,7 @@ final class AppState: ObservableObject {
             )
 
             timerDraftDescription = ""
-            statusMessage = "Timer uruchomiony."
+            statusMessage = L10n.timerStarted
 
             await refreshEntriesWithoutSpinner(context: context)
         }
@@ -217,7 +217,7 @@ final class AppState: ObservableObject {
                 end: Date()
             )
 
-            statusMessage = "Timer zatrzymany."
+            statusMessage = L10n.timerStopped
             await refreshEntriesWithoutSpinner(context: context)
         }
     }
@@ -240,7 +240,7 @@ final class AppState: ObservableObject {
                 payload: payload
             )
 
-            statusMessage = "Wpis zaktualizowany."
+            statusMessage = L10n.entryUpdated
             await refreshEntriesWithoutSpinner(context: context)
         }
     }
@@ -271,7 +271,7 @@ final class AppState: ObservableObject {
 
     private func contextOrThrow() throws -> Context {
         guard !userId.isEmpty, !workspaceId.isEmpty else {
-            throw ClockifyAPIError.httpError(statusCode: 400, message: "Najpierw kliknij Polacz.")
+            throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.connectFirst)
         }
 
         let client = try makeClient()
@@ -281,7 +281,7 @@ final class AppState: ObservableObject {
     private func makeClient() throws -> ClockifyAPIClient {
         let trimmedApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedApiKey.isEmpty else {
-            throw ClockifyAPIError.httpError(statusCode: 400, message: "Uzupelnij API key Clockify.")
+            throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.fillApiKey)
         }
 
         return try ClockifyAPIClient(baseURLString: baseURL, apiKey: trimmedApiKey)

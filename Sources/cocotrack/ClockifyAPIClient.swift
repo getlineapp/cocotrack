@@ -9,13 +9,13 @@ enum ClockifyAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidBaseURL:
-            return "Niepoprawny URL API Clockify."
+            return L10n.errorInvalidBaseURL
         case .missingData:
-            return "Brak danych w odpowiedzi API."
+            return L10n.errorMissingData
         case .invalidResponse:
-            return "Niepoprawna odpowiedz API."
+            return L10n.errorInvalidResponse
         case .httpError(let statusCode, let message):
-            return "Clockify API error \(statusCode): \(message)"
+            return L10n.apiError(statusCode, message)
         }
     }
 }
@@ -135,7 +135,7 @@ struct ClockifyAPIClient {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             let apiError = try? JSONDecoder.clockifyDecoder.decode(ClockifyAPIErrorResponse.self, from: data)
-            let message = apiError?.message ?? apiError?.error ?? "Unknown API error"
+            let message = apiError?.message ?? apiError?.error ?? L10n.errorUnknownApi
             throw ClockifyAPIError.httpError(statusCode: httpResponse.statusCode, message: message)
         }
 
