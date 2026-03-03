@@ -63,6 +63,12 @@
 "appState.connectFirst" = "Najpierw kliknij Polacz.";
 "appState.fillApiKey" = "Uzupelnij API key Clockify.";
 "appState.workspaceError" = "Nie udalo sie ustalic workspace ID.";
+"appState.operationInProgress" = "Operacja w toku. Poczekaj chwile.";
+"appState.timerAlreadyRunning" = "Timer jest juz uruchomiony.";
+"appState.noRunningTimer" = "Brak uruchomionego timera do zatrzymania.";
+"appState.endBeforeStart" = "Czas zakonczenia nie moze byc wczesniejszy niz start.";
+"appState.projectNotFound" = "Wybrany projekt juz nie istnieje.";
+"appState.projectNameRequired" = "Nazwa projektu jest wymagana.";
 
 /* Menu bar */
 "menu.timerActive" = "Timer aktywny";
@@ -71,9 +77,21 @@
 "menu.openApp" = "Otworz app";
 "menu.quit" = "Wyjdz";
 
+/* Projects */
+"project.none" = "Brak projektu";
+"project.label" = "Projekt";
+"project.create.title" = "Nowy projekt";
+"project.create.name" = "Nazwa projektu";
+"project.create.color" = "Kolor";
+"project.create.button" = "Utworz";
+"appState.projectUpdated" = "Projekt zaktualizowany.";
+"appState.projectCreated" = "Projekt utworzony.";
+
 /* API errors */
 "api.error.invalidBaseURL" = "Niepoprawny URL API Clockify.";
 "api.error.missingData" = "Brak danych w odpowiedzi API.";
 "api.error.invalidResponse" = "Niepoprawna odpowiedz API.";
 "api.error.http" = "Clockify API error %d: %@";
 "api.error.unknown" = "Unknown API error";
+"api.error.network" = "Blad sieci: %@";
+"api.error.decoding" = "Nie udalo sie odczytac odpowiedzi API.";

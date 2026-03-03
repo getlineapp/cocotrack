@@ -63,6 +63,12 @@ enum L10n {
     static let connectFirst = NSLocalizedString("appState.connectFirst", bundle: .module, comment: "Error: not connected yet")
     static let fillApiKey = NSLocalizedString("appState.fillApiKey", bundle: .module, comment: "Error: API key missing")
     static let workspaceError = NSLocalizedString("appState.workspaceError", bundle: .module, comment: "Error: workspace ID not determined")
+    static let operationInProgress = NSLocalizedString("appState.operationInProgress", bundle: .module, comment: "Operation already in progress")
+    static let timerAlreadyRunning = NSLocalizedString("appState.timerAlreadyRunning", bundle: .module, comment: "Error: timer already running")
+    static let noRunningTimer = NSLocalizedString("appState.noRunningTimer", bundle: .module, comment: "Error: no running timer")
+    static let endBeforeStart = NSLocalizedString("appState.endBeforeStart", bundle: .module, comment: "Error: entry end is before start")
+    static let projectNotFound = NSLocalizedString("appState.projectNotFound", bundle: .module, comment: "Error: selected project is missing")
+    static let projectNameRequired = NSLocalizedString("appState.projectNameRequired", bundle: .module, comment: "Error: project name required")
 
     // MARK: - Menu bar
     static let menuTimerActive = NSLocalizedString("menu.timerActive", bundle: .module, comment: "Menu bar: timer active")
@@ -71,11 +77,22 @@ enum L10n {
     static let openApp = NSLocalizedString("menu.openApp", bundle: .module, comment: "Open app button")
     static let quit = NSLocalizedString("menu.quit", bundle: .module, comment: "Quit button")
 
+    // MARK: - Projects
+    static let noProject = NSLocalizedString("project.none", bundle: .module, comment: "No project label")
+    static let projectLabel = NSLocalizedString("project.label", bundle: .module, comment: "Project picker label")
+    static let createProjectTitle = NSLocalizedString("project.create.title", bundle: .module, comment: "Create project sheet title")
+    static let createProjectName = NSLocalizedString("project.create.name", bundle: .module, comment: "Project name field placeholder")
+    static let createProjectColor = NSLocalizedString("project.create.color", bundle: .module, comment: "Color picker label")
+    static let createProjectButton = NSLocalizedString("project.create.button", bundle: .module, comment: "Create project button")
+    static let projectUpdated = NSLocalizedString("appState.projectUpdated", bundle: .module, comment: "Status after updating project")
+    static let projectCreated = NSLocalizedString("appState.projectCreated", bundle: .module, comment: "Status after creating project")
+
     // MARK: - API errors
     static let errorInvalidBaseURL = NSLocalizedString("api.error.invalidBaseURL", bundle: .module, comment: "Invalid base URL error")
     static let errorMissingData = NSLocalizedString("api.error.missingData", bundle: .module, comment: "Missing data error")
     static let errorInvalidResponse = NSLocalizedString("api.error.invalidResponse", bundle: .module, comment: "Invalid response error")
     static let errorUnknownApi = NSLocalizedString("api.error.unknown", bundle: .module, comment: "Unknown API error")
+    static let apiDecodingError = NSLocalizedString("api.error.decoding", bundle: .module, comment: "API decoding error")
 
     // MARK: - Interpolated strings
 
@@ -93,5 +110,9 @@ enum L10n {
 
     static func apiError(_ code: Int, _ message: String) -> String {
         String(format: NSLocalizedString("api.error.http", bundle: .module, comment: "HTTP API error with code and message"), code, message)
+    }
+
+    static func apiNetworkError(_ message: String) -> String {
+        String(format: NSLocalizedString("api.error.network", bundle: .module, comment: "Network API error"), message)
     }
 }

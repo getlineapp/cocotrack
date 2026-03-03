@@ -8,6 +8,8 @@ APP_NAME="Cocotrack"
 BUNDLE_ID="me.cocotrack.app"
 EXECUTABLE_NAME="cocotrack"
 MIN_MACOS_VERSION="13.0"
+VERSION="1.2.0"
+BUILD_NUMBER="3"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
@@ -17,8 +19,8 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
-ZIP_PATH="$DIST_DIR/$APP_NAME-macOS.zip"
-DMG_PATH="$DIST_DIR/$APP_NAME-macOS.dmg"
+ZIP_PATH="$DIST_DIR/$APP_NAME-macOS-v${VERSION}.zip"
+DMG_PATH="$DIST_DIR/$APP_NAME-macOS-v${VERSION}.dmg"
 
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-}"
@@ -61,6 +63,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>$EXECUTABLE_NAME</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
+  <key>CFBundleIconName</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleInfoDictionaryVersion</key>
@@ -70,9 +74,9 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.1.0</string>
+  <string>$VERSION</string>
   <key>CFBundleVersion</key>
-  <string>2</string>
+  <string>$BUILD_NUMBER</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_MACOS_VERSION</string>
   <key>NSHighResolutionCapable</key>

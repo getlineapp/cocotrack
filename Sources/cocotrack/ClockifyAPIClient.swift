@@ -5,6 +5,8 @@ enum ClockifyAPIError: LocalizedError {
     case missingData
     case invalidResponse
     case httpError(statusCode: Int, message: String)
+    case networkError(String)
+    case decodingError
 
     var errorDescription: String? {
         switch self {
@@ -16,6 +18,10 @@ enum ClockifyAPIError: LocalizedError {
             return L10n.errorInvalidResponse
         case .httpError(let statusCode, let message):
             return L10n.apiError(statusCode, message)
+        case .networkError(let message):
+            return L10n.apiNetworkError(message)
+        case .decodingError:
+            return L10n.apiDecodingError
         }
     }
 }
@@ -26,7 +32,13 @@ struct ClockifyAPIClient {
     private let session: URLSession
 
     init(baseURLString: String, apiKey: String, session: URLSession = .shared) throws {
-        guard let baseURL = URL(string: baseURLString) else {
+        let trimmedBaseURL = baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard
+            let baseURL = URL(string: trimmedBaseURL),
+            let scheme = baseURL.scheme?.lowercased(),
+            scheme == "http" || scheme == "https",
+            baseURL.host != nil
+        else {
             throw ClockifyAPIError.invalidBaseURL
         }
 
@@ -72,15 +84,50 @@ struct ClockifyAPIClient {
         return entries.first
     }
 
-    func startTimer(workspaceId: String, description: String, start: Date) async throws -> ClockifyTimeEntry {
+    func fetchProjects(workspaceId: String) async throws -> [ClockifyProject] {
+        try await request(
+            method: "GET",
+            path: "workspaces/\(workspaceId)/projects",
+            queryItems: [
+                URLQueryItem(name: "archived", value: "false"),
+                URLQueryItem(name: "page-size", value: "200")
+            ],
+            body: Optional<String>.none,
+            responseType: [ClockifyProject].self
+        )
+    }
+
+    func createProject(workspaceId: String, name: String, color: String?, isPublic: Bool = true) async throws -> ClockifyProject {
+        let payload = ClockifyCreateProjectRequest(name: name, color: color, isPublic: isPublic)
+        return try await request(
+            method: "POST",
+            path: "workspaces/\(workspaceId)/projects",
+            queryItems: [],
+            body: payload,
+            responseType: ClockifyProject.self
+        )
+    }
+
+    func startTimer(workspaceId: String, description: String, projectId: String?, start: Date) async throws -> ClockifyTimeEntry {
         let payload = ClockifyCreateTimeEntryRequest(
             start: start.clockifyISO8601String,
-            description: description
+            description: description,
+            projectId: projectId
         )
 
         return try await request(
             method: "POST",
             path: "workspaces/\(workspaceId)/time-entries",
+            queryItems: [],
+            body: payload,
+            responseType: ClockifyTimeEntry.self
+        )
+    }
+
+    func updateTimeEntry(workspaceId: String, entryId: String, payload: ClockifyUpdateTimeEntryRequest) async throws -> ClockifyTimeEntry {
+        try await request(
+            method: "PUT",
+            path: "workspaces/\(workspaceId)/time-entries/\(entryId)",
             queryItems: [],
             body: payload,
             responseType: ClockifyTimeEntry.self
@@ -127,7 +174,18 @@ struct ClockifyAPIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            if let error = error as? URLError {
+                throw ClockifyAPIError.networkError(error.localizedDescription)
+            }
+
+            throw error
+        }
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ClockifyAPIError.invalidResponse
@@ -143,7 +201,11 @@ struct ClockifyAPIClient {
             throw ClockifyAPIError.missingData
         }
 
-        return try JSONDecoder.clockifyDecoder.decode(Response.self, from: data)
+        do {
+            return try JSONDecoder.clockifyDecoder.decode(Response.self, from: data)
+        } catch is DecodingError {
+            throw ClockifyAPIError.decodingError
+        }
     }
 
     private func buildURL(path: String, queryItems: [URLQueryItem]) throws -> URL {

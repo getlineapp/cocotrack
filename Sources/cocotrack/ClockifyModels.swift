@@ -8,6 +8,14 @@ struct ClockifyUser: Decodable {
     let activeWorkspace: String?
 }
 
+struct ClockifyProject: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let color: String?
+    let archived: Bool?
+    let clientName: String?
+}
+
 struct ClockifyTimeEntry: Decodable, Identifiable {
     let id: String
     let description: String?
@@ -28,6 +36,20 @@ struct ClockifyTimeInterval: Decodable {
 struct ClockifyCreateTimeEntryRequest: Encodable {
     let start: String
     let description: String
+    let projectId: String?
+}
+
+struct ClockifyUpdateTimeEntryRequest: Encodable {
+    let start: String
+    let description: String
+    let end: String?
+    let projectId: String?
+}
+
+struct ClockifyCreateProjectRequest: Encodable {
+    let name: String
+    let color: String?
+    let isPublic: Bool
 }
 
 struct ClockifyStopTimeEntryRequest: Encodable {

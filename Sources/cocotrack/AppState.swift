@@ -3,6 +3,7 @@ import Foundation
 struct QuickStartTemplate: Identifiable {
     let description: String
     let lastUsed: Date
+    let projectId: String?
 
     var id: String { description }
 }
@@ -19,7 +20,9 @@ final class AppState: ObservableObject {
 
     @Published var recentEntries: [ClockifyTimeEntry] = []
     @Published var runningEntry: ClockifyTimeEntry?
+    @Published var projects: [ClockifyProject] = []
     @Published var timerDraftDescription: String = ""
+    @Published var timerDraftProjectId: String?
     @Published var statusMessage: String = ""
     @Published var isLoading: Bool = false
     @Published private(set) var favoriteDescriptions: Set<String>
@@ -52,6 +55,14 @@ final class AppState: ObservableObject {
         runningEntry != nil
     }
 
+    var canStartTimer: Bool {
+        isConnected && !isTracking && !isLoading
+    }
+
+    var canStopTimer: Bool {
+        isConnected && isTracking && !isLoading
+    }
+
     var isConfigured: Bool {
         !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -69,7 +80,11 @@ final class AppState: ObservableObject {
             guard !trimmed.isEmpty else { continue }
             guard seen.insert(trimmed.lowercased()).inserted else { continue }
 
-            templates.append(QuickStartTemplate(description: trimmed, lastUsed: entry.timeInterval.start))
+            templates.append(QuickStartTemplate(
+                description: trimmed,
+                lastUsed: entry.timeInterval.start,
+                projectId: entry.projectId
+            ))
             if templates.count == 10 {
                 break
             }
@@ -79,24 +94,29 @@ final class AppState: ObservableObject {
     }
 
     var favoriteTemplates: [QuickStartTemplate] {
-        var lastUsedByDescription: [String: Date] = [:]
+        var lastUsedByDescription: [String: (date: Date, projectId: String?)] = [:]
 
         for entry in recentEntries {
             let trimmed = (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
 
             if let current = lastUsedByDescription[trimmed] {
-                if entry.timeInterval.start > current {
-                    lastUsedByDescription[trimmed] = entry.timeInterval.start
+                if entry.timeInterval.start > current.date {
+                    lastUsedByDescription[trimmed] = (date: entry.timeInterval.start, projectId: entry.projectId)
                 }
             } else {
-                lastUsedByDescription[trimmed] = entry.timeInterval.start
+                lastUsedByDescription[trimmed] = (date: entry.timeInterval.start, projectId: entry.projectId)
             }
         }
 
         return favoriteDescriptions
             .map { description in
-                QuickStartTemplate(description: description, lastUsed: lastUsedByDescription[description] ?? .distantPast)
+                let info = lastUsedByDescription[description]
+                return QuickStartTemplate(
+                    description: description,
+                    lastUsed: info?.date ?? .distantPast,
+                    projectId: info?.projectId
+                )
             }
             .sorted { $0.lastUsed > $1.lastUsed }
     }
@@ -124,6 +144,16 @@ final class AppState: ObservableObject {
         return L10n.noDescription
     }
 
+    func projectName(for id: String?) -> String? {
+        guard let id else { return nil }
+        return projects.first(where: { $0.id == id })?.name
+    }
+
+    func projectColorHex(for id: String?) -> String? {
+        guard let id else { return nil }
+        return projects.first(where: { $0.id == id })?.color
+    }
+
     func connectAndRefresh() async {
         await runLoadingTask {
             persistSettings()
@@ -142,9 +172,11 @@ final class AppState: ObservableObject {
 
             async let running = client.fetchRunningTimeEntry(workspaceId: resolvedWorkspace, userId: user.id)
             async let recent = client.fetchRecentTimeEntries(workspaceId: resolvedWorkspace, userId: user.id, limit: 25)
+            async let projectsList = client.fetchProjects(workspaceId: resolvedWorkspace)
 
             runningEntry = try await running
             recentEntries = try await recent
+            projects = try await projectsList
             statusMessage = L10n.connectedAs(userName)
 
             restartElapsedTaskIfNeeded()
@@ -157,17 +189,26 @@ final class AppState: ObservableObject {
             let context = try contextOrThrow()
             async let running = context.client.fetchRunningTimeEntry(workspaceId: context.workspaceId, userId: context.userId)
             async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 25)
+            async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
 
             runningEntry = try await running
             recentEntries = try await recent
+            projects = try await projectsList
             statusMessage = L10n.dataRefreshed
 
             restartElapsedTaskIfNeeded()
         }
     }
 
-    func startTimer() async {
+    @discardableResult
+    func startTimer() async -> Bool {
+        var didStart = false
+
         await runLoadingTask {
+            guard !isTracking else {
+                throw ClockifyAPIError.httpError(statusCode: 409, message: L10n.timerAlreadyRunning)
+            }
+
             let context = try contextOrThrow()
             let text = timerDraftDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             let description = text.isEmpty ? L10n.noDescription : text
@@ -175,19 +216,26 @@ final class AppState: ObservableObject {
             _ = try await context.client.startTimer(
                 workspaceId: context.workspaceId,
                 description: description,
+                projectId: timerDraftProjectId,
                 start: Date()
             )
+            didStart = true
 
             timerDraftDescription = ""
+            timerDraftProjectId = nil
             statusMessage = L10n.timerStarted
 
             await refreshEntriesWithoutSpinner(context: context)
         }
+
+        return didStart
     }
 
-    func startTimer(using description: String) async {
+    @discardableResult
+    func startTimer(using description: String, projectId: String? = nil) async -> Bool {
         timerDraftDescription = description
-        await startTimer()
+        timerDraftProjectId = projectId
+        return await startTimer()
     }
 
     func isFavorite(_ description: String) -> Bool {
@@ -210,6 +258,10 @@ final class AppState: ObservableObject {
 
     func stopTimer() async {
         await runLoadingTask {
+            guard isTracking else {
+                throw ClockifyAPIError.httpError(statusCode: 409, message: L10n.noRunningTimer)
+            }
+
             let context = try contextOrThrow()
             _ = try await context.client.stopRunningTimer(
                 workspaceId: context.workspaceId,
@@ -222,35 +274,103 @@ final class AppState: ObservableObject {
         }
     }
 
-    func saveEntryEdits(entryId: String, description: String, start: Date, end: Date?) async {
-        await runLoadingTask {
-            let context = try contextOrThrow()
-            let payload = [
-                ClockifyBulkEditTimeEntryRequest(
-                    id: entryId,
-                    description: description.trimmingCharacters(in: .whitespacesAndNewlines),
-                    start: start.clockifyISO8601String,
-                    end: end?.clockifyISO8601String
-                )
-            ]
+    @discardableResult
+    func saveEntryEdits(entryId: String, description: String, start: Date, end: Date?, projectId: String?) async -> Bool {
+        var didSave = false
 
-            _ = try await context.client.bulkEditTimeEntries(
+        await runLoadingTask {
+            if let end, end < start {
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.endBeforeStart)
+            }
+
+            let context = try contextOrThrow()
+            let payload = ClockifyUpdateTimeEntryRequest(
+                start: start.clockifyISO8601String,
+                description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+                end: end?.clockifyISO8601String,
+                projectId: projectId
+            )
+
+            _ = try await context.client.updateTimeEntry(
                 workspaceId: context.workspaceId,
-                userId: context.userId,
+                entryId: entryId,
                 payload: payload
             )
+            didSave = true
 
             statusMessage = L10n.entryUpdated
             await refreshEntriesWithoutSpinner(context: context)
         }
+
+        return didSave
+    }
+
+    func changeEntryProject(entryId: String, projectId: String?) async {
+        let entry = runningEntry?.id == entryId ? runningEntry : recentEntries.first(where: { $0.id == entryId })
+        guard let entry else { return }
+
+        await runLoadingTask {
+            if let projectId, !projects.contains(where: { $0.id == projectId }) {
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.projectNotFound)
+            }
+
+            let context = try contextOrThrow()
+            let payload = ClockifyUpdateTimeEntryRequest(
+                start: entry.timeInterval.start.clockifyISO8601String,
+                description: entry.description ?? "",
+                end: entry.timeInterval.end?.clockifyISO8601String,
+                projectId: projectId
+            )
+
+            _ = try await context.client.updateTimeEntry(
+                workspaceId: context.workspaceId,
+                entryId: entryId,
+                payload: payload
+            )
+
+            statusMessage = L10n.projectUpdated
+            await refreshEntriesWithoutSpinner(context: context)
+        }
+    }
+
+    @discardableResult
+    func createProject(name: String, color: String?) async -> Bool {
+        var didCreate = false
+
+        await runLoadingTask {
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else {
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.projectNameRequired)
+            }
+
+            let context = try contextOrThrow()
+            let project = try await context.client.createProject(
+                workspaceId: context.workspaceId,
+                name: trimmedName,
+                color: color
+            )
+            didCreate = true
+
+            projects.append(project)
+            statusMessage = L10n.projectCreated
+        }
+
+        return didCreate
     }
 
     private func runLoadingTask(_ operation: @MainActor () async throws -> Void) async {
+        guard !isLoading else {
+            statusMessage = L10n.operationInProgress
+            return
+        }
+
         isLoading = true
         defer { isLoading = false }
 
         do {
             try await operation()
+        } catch is CancellationError {
+            // Ignore cancellation and keep current status message.
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -260,9 +380,11 @@ final class AppState: ObservableObject {
         do {
             async let running = context.client.fetchRunningTimeEntry(workspaceId: context.workspaceId, userId: context.userId)
             async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 25)
+            async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
 
             runningEntry = try await running
             recentEntries = try await recent
+            projects = try await projectsList
             restartElapsedTaskIfNeeded()
         } catch {
             statusMessage = error.localizedDescription
@@ -284,7 +406,10 @@ final class AppState: ObservableObject {
             throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.fillApiKey)
         }
 
-        return try ClockifyAPIClient(baseURLString: baseURL, apiKey: trimmedApiKey)
+        return try ClockifyAPIClient(
+            baseURLString: baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
+            apiKey: trimmedApiKey
+        )
     }
 
     private func resolvedWorkspaceId(user: ClockifyUser) -> String? {
@@ -370,6 +495,8 @@ final class AppState: ObservableObject {
     }
 
     private func autoRefreshTick() async {
+        guard !isLoading else { return }
+
         do {
             let context = try contextOrThrow()
             await refreshEntriesWithoutSpinner(context: context)
