@@ -77,6 +77,11 @@
 "menu.openApp" = "Otworz app";
 "menu.quit" = "Wyjdz";
 
+/* Force projects */
+"appState.projectRequired" = "Workspace wymaga projektu. Wybierz projekt przed startem.";
+"appState.projectRequiredForStop" = "Przypisz projekt do timera, aby go zatrzymac.";
+"project.requiredHint" = "Projekt wymagany";
+
 /* Projects */
 "project.none" = "Brak projektu";
 "project.label" = "Projekt";

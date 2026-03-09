@@ -84,6 +84,16 @@ struct ClockifyAPIClient {
         return entries.first
     }
 
+    func fetchWorkspace(workspaceId: String) async throws -> ClockifyWorkspace {
+        try await request(
+            method: "GET",
+            path: "workspaces/\(workspaceId)",
+            queryItems: [],
+            body: Optional<String>.none,
+            responseType: ClockifyWorkspace.self
+        )
+    }
+
     func fetchProjects(workspaceId: String) async throws -> [ClockifyProject] {
         try await request(
             method: "GET",

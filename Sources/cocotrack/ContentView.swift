@@ -127,6 +127,12 @@ struct ContentView: View {
 
                 runningProjectPicker
 
+                if appState.forceProjects && appState.runningEntry?.projectId == nil {
+                    Text(L10n.projectRequiredForStop)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 Text(appState.elapsedText)
                     .font(.system(size: 54, weight: .black, design: .monospaced))
                     .foregroundStyle(.white)
@@ -163,7 +169,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
-                    .disabled(!appState.canStartTimer)
+                    .disabled(!appState.canStartTimer || (appState.forceProjects && selectedProjectId == nil))
                 }
 
                 HStack(spacing: 8) {
@@ -173,6 +179,12 @@ struct ContentView: View {
                         onSelect: { selectedProjectId = $0 },
                         onDarkBackground: true
                     )
+
+                    if appState.forceProjects && selectedProjectId == nil {
+                        Text(L10n.projectRequiredHint)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
 
                     Button {
                         showCreateProject = true
@@ -233,7 +245,7 @@ struct ContentView: View {
                             projectColorHex: appState.projectColorHex(for: template.projectId),
                             onUnfavorite: { appState.toggleFavorite(description: template.description) },
                             onStart: { Task { await appState.startTimer(using: template.description, projectId: template.projectId) } },
-                            isStartDisabled: !appState.canStartTimer
+                            isStartDisabled: !appState.canStartTimer || (appState.forceProjects && template.projectId == nil)
                         )
                     }
                 }
@@ -258,7 +270,7 @@ struct ContentView: View {
                             projectName: appState.projectName(for: template.projectId),
                             projectColorHex: appState.projectColorHex(for: template.projectId),
                             onStart: { Task { await appState.startTimer(using: template.description, projectId: template.projectId) } },
-                            isStartDisabled: !appState.canStartTimer
+                            isStartDisabled: !appState.canStartTimer || (appState.forceProjects && template.projectId == nil)
                         )
                     }
                 }
@@ -299,7 +311,7 @@ struct ContentView: View {
                                         onEdit: {
                                             editingEntry = entry
                                         },
-                                        isStartDisabled: !appState.canStartTimer
+                                        isStartDisabled: !appState.canStartTimer || (appState.forceProjects && entry.projectId == nil)
                                     )
                                 }
                             }

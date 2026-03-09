@@ -77,6 +77,11 @@
 "menu.openApp" = "Open app";
 "menu.quit" = "Quit";
 
+/* Force projects */
+"appState.projectRequired" = "Workspace requires a project. Select one before starting.";
+"appState.projectRequiredForStop" = "Assign a project to the timer before stopping.";
+"project.requiredHint" = "Project required";
+
 /* Projects */
 "project.none" = "No project";
 "project.label" = "Project";

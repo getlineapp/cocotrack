@@ -78,6 +78,25 @@ struct ClockifyBulkEditTimeEntryRequest: Encodable {
     }
 }
 
+struct ClockifyWorkspace: Decodable {
+    let id: String
+    let name: String
+    let workspaceSettings: ClockifyWorkspaceSettings
+}
+
+struct ClockifyWorkspaceSettings: Decodable {
+    let forceProjects: Bool
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        forceProjects = try container.decodeIfPresent(Bool.self, forKey: .forceProjects) ?? false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case forceProjects
+    }
+}
+
 struct ClockifyAPIErrorResponse: Decodable {
     let message: String?
     let error: String?

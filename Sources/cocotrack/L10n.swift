@@ -77,6 +77,11 @@ enum L10n {
     static let openApp = NSLocalizedString("menu.openApp", bundle: .module, comment: "Open app button")
     static let quit = NSLocalizedString("menu.quit", bundle: .module, comment: "Quit button")
 
+    // MARK: - Force projects
+    static let projectRequired = NSLocalizedString("appState.projectRequired", bundle: .module, comment: "Error: workspace requires a project")
+    static let projectRequiredForStop = NSLocalizedString("appState.projectRequiredForStop", bundle: .module, comment: "Error: assign project before stopping")
+    static let projectRequiredHint = NSLocalizedString("project.requiredHint", bundle: .module, comment: "Hint: workspace requires project selection")
+
     // MARK: - Projects
     static let noProject = NSLocalizedString("project.none", bundle: .module, comment: "No project label")
     static let projectLabel = NSLocalizedString("project.label", bundle: .module, comment: "Project picker label")

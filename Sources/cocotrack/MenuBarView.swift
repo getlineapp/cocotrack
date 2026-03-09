@@ -18,6 +18,12 @@ struct MenuBarView: View {
                     runningProjectMenu(entry: entry)
                 }
 
+                if appState.forceProjects && appState.runningEntry?.projectId == nil {
+                    Text(L10n.projectRequiredForStop)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 Text(appState.elapsedText)
                     .font(.system(.title3, design: .monospaced).weight(.semibold))
 
@@ -32,11 +38,17 @@ struct MenuBarView: View {
 
                 draftProjectMenu
 
+                if appState.forceProjects && appState.timerDraftProjectId == nil {
+                    Text(L10n.projectRequiredHint)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
                 Button("Start") {
                     Task { await appState.startTimer() }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!appState.canStartTimer)
+                .disabled(!appState.canStartTimer || (appState.forceProjects && appState.timerDraftProjectId == nil))
             }
 
             Divider()

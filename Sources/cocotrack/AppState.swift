@@ -1,5 +1,15 @@
 import Foundation
 
+enum TimerValidation {
+    static func shouldBlockStart(forceProjects: Bool, projectId: String?) -> Bool {
+        forceProjects && projectId == nil
+    }
+
+    static func shouldWarnProjectOnStop(forceProjects: Bool, runningProjectId: String?) -> Bool {
+        forceProjects && runningProjectId == nil
+    }
+}
+
 struct QuickStartTemplate: Identifiable {
     let description: String
     let lastUsed: Date
@@ -23,6 +33,7 @@ final class AppState: ObservableObject {
     @Published var projects: [ClockifyProject] = []
     @Published var timerDraftDescription: String = ""
     @Published var timerDraftProjectId: String?
+    @Published var forceProjects: Bool = false
     @Published var statusMessage: String = ""
     @Published var isLoading: Bool = false
     @Published private(set) var favoriteDescriptions: Set<String>
@@ -173,10 +184,12 @@ final class AppState: ObservableObject {
             async let running = client.fetchRunningTimeEntry(workspaceId: resolvedWorkspace, userId: user.id)
             async let recent = client.fetchRecentTimeEntries(workspaceId: resolvedWorkspace, userId: user.id, limit: 25)
             async let projectsList = client.fetchProjects(workspaceId: resolvedWorkspace)
+            async let workspaceInfo = client.fetchWorkspace(workspaceId: resolvedWorkspace)
 
             runningEntry = try await running
             recentEntries = try await recent
             projects = try await projectsList
+            forceProjects = (try? await workspaceInfo)?.workspaceSettings.forceProjects ?? false
             statusMessage = L10n.connectedAs(userName)
 
             restartElapsedTaskIfNeeded()
@@ -207,6 +220,10 @@ final class AppState: ObservableObject {
         await runLoadingTask {
             guard !isTracking else {
                 throw ClockifyAPIError.httpError(statusCode: 409, message: L10n.timerAlreadyRunning)
+            }
+
+            if TimerValidation.shouldBlockStart(forceProjects: forceProjects, projectId: timerDraftProjectId) {
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.projectRequired)
             }
 
             let context = try contextOrThrow()
@@ -263,11 +280,19 @@ final class AppState: ObservableObject {
             }
 
             let context = try contextOrThrow()
-            _ = try await context.client.stopRunningTimer(
-                workspaceId: context.workspaceId,
-                userId: context.userId,
-                end: Date()
-            )
+
+            do {
+                _ = try await context.client.stopRunningTimer(
+                    workspaceId: context.workspaceId,
+                    userId: context.userId,
+                    end: Date()
+                )
+            } catch {
+                if forceProjects, runningEntry?.projectId == nil {
+                    throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.projectRequiredForStop)
+                }
+                throw error
+            }
 
             statusMessage = L10n.timerStopped
             await refreshEntriesWithoutSpinner(context: context)
