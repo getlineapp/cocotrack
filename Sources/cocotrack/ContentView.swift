@@ -154,6 +154,12 @@ struct ContentView: View {
                     Text(appState.elapsedText)
                         .font(.system(size: 32, weight: .bold, design: .monospaced))
                         .monospacedDigit()
+                        .onTapGesture {
+                            if let entry = appState.runningEntry {
+                                editingEntry = entry
+                            }
+                        }
+                        .help("Kliknij aby edytować wpis")
 
                     Spacer()
 
