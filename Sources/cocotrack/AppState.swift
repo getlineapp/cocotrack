@@ -18,6 +18,15 @@ struct QuickStartTemplate: Identifiable {
     var id: String { description }
 }
 
+struct QuickStartItem: Identifiable {
+    let description: String
+    let lastUsed: Date
+    let projectId: String?
+    let isFavorite: Bool
+
+    var id: String { description }
+}
+
 @MainActor
 final class AppState: ObservableObject {
     @Published var apiKey: String
@@ -130,6 +139,31 @@ final class AppState: ObservableObject {
                 )
             }
             .sorted { $0.lastUsed > $1.lastUsed }
+    }
+
+    var quickStartItems: [QuickStartItem] {
+        let favItems = favoriteTemplates.map { template in
+            QuickStartItem(
+                description: template.description,
+                lastUsed: template.lastUsed,
+                projectId: template.projectId,
+                isFavorite: true
+            )
+        }
+
+        let favDescriptions = Set(favItems.map { $0.description.lowercased() })
+        let recentItems = quickStartTemplates
+            .filter { !favDescriptions.contains($0.description.lowercased()) }
+            .map { template in
+                QuickStartItem(
+                    description: template.description,
+                    lastUsed: template.lastUsed,
+                    projectId: template.projectId,
+                    isFavorite: false
+                )
+            }
+
+        return Array((favItems + recentItems).prefix(10))
     }
 
     var menuBarTitle: String {
