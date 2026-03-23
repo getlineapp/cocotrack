@@ -11,24 +11,35 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.95, green: 0.96, blue: 0.98)
+            Color(.windowBackgroundColor)
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    topBar
-                    timerHero
-                    favoritesSection
+                VStack(alignment: .leading, spacing: 0) {
+                    toolbar
+                        .padding(.horizontal, 18)
+                        .padding(.top, 14)
+                        .padding(.bottom, 12)
+
+                    timerCard
+                        .padding(.horizontal, 18)
+
+                    Divider()
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 18)
+
                     quickStartSection
-                    recentEntriesSection
-                    statusSection
+                        .padding(.horizontal, 18)
+
+                    Spacer(minLength: 12)
+
+                    statusBar
+                        .padding(.horizontal, 18)
+                        .padding(.bottom, 10)
                 }
-                .padding(20)
-                .frame(maxWidth: 600, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .frame(minWidth: 540, idealWidth: 580, minHeight: 700)
+        .frame(minWidth: 480, idealWidth: 520, maxWidth: 600, minHeight: 400)
         .sheet(item: $editingEntry) { entry in
             EntryEditSheet(entry: entry) { description, start, end, projectId in
                 await appState.saveEntryEdits(
@@ -51,20 +62,26 @@ struct ContentView: View {
         }
     }
 
-    private var topBar: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Cocotrack")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+    // MARK: - Toolbar
 
-                Text(L10n.appSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+    private var toolbar: some View {
+        HStack(alignment: .center) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(appState.isConnected ? Color.green : (appState.isConfigured ? Color.orange : Color.gray))
+                    .frame(width: 8, height: 8)
+
+                Text("Cocotrack")
+                    .font(.system(size: 13, weight: .semibold))
+
+                if !appState.userName.isEmpty {
+                    Text("· \(appState.userName)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
-
-            connectionPill
 
             Button {
                 Task { await appState.refreshEntries() }
@@ -72,89 +89,93 @@ struct ContentView: View {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.bordered)
+            .controlSize(.small)
             .disabled(appState.isLoading || !appState.isConnected)
 
             Button {
                 showSettings = true
             } label: {
-                Label(L10n.settings, systemImage: "gearshape")
+                Image(systemName: "gearshape")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Color(red: 0.13, green: 0.27, blue: 0.48))
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
     }
 
-    private var connectionPill: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(appState.isConnected ? Color.green : (appState.isConfigured ? Color.orange : Color.gray))
-                .frame(width: 9, height: 9)
+    // MARK: - Timer card
 
-            Text(appState.isConnected ? L10n.statusConnected : (appState.isConfigured ? L10n.statusNeedsConnection : L10n.statusNotConfigured))
-                .font(.caption.weight(.semibold))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.white, in: Capsule())
-        .overlay(
-            Capsule()
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
-    }
+    private var timerCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !appState.isConnected {
+                VStack(spacing: 10) {
+                    Text(L10n.configureConnection)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Button(L10n.settings) {
+                        showSettings = true
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+            } else if appState.isTracking {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 6, height: 6)
+                    Text(L10n.timerActive)
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.secondary)
+                }
 
-    private var timerHero: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(appState.isTracking ? L10n.timerActive : L10n.timerNew)
-                    .font(.headline)
-                    .foregroundStyle(.white.opacity(0.85))
-
-                Spacer()
-
-                Text(appState.isTracking ? "LIVE" : "READY")
-                    .font(.caption2.weight(.bold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(appState.isTracking ? Color.green.opacity(0.2) : Color.white.opacity(0.12), in: Capsule())
-                    .foregroundStyle(.white)
-            }
-
-            if appState.isTracking {
                 Text(appState.runningDescription)
-                    .font(.system(size: 30, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 15, weight: .semibold))
                     .lineLimit(2)
 
-                runningProjectPicker
+                if let entry = appState.runningEntry {
+                    ProjectPickerMenu(
+                        projects: appState.projects,
+                        selectedProjectId: entry.projectId,
+                        onSelect: { newId in
+                            Task { await appState.changeEntryProject(entryId: entry.id, projectId: newId) }
+                        }
+                    )
+                }
 
                 if appState.forceProjects && appState.runningEntry?.projectId == nil {
                     Text(L10n.projectRequiredForStop)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.red)
                 }
 
-                Text(appState.elapsedText)
-                    .font(.system(size: 54, weight: .black, design: .monospaced))
-                    .foregroundStyle(.white)
+                HStack {
+                    Text(appState.elapsedText)
+                        .font(.system(size: 32, weight: .bold, design: .monospaced))
+                        .monospacedDigit()
 
-                Button {
-                    Task { await appState.stopTimer() }
-                } label: {
-                    Label("Stop", systemImage: "stop.fill")
+                    Spacer()
+
+                    Button {
+                        Task { await appState.stopTimer() }
+                    } label: {
+                        Label("Stop", systemImage: "stop.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .controlSize(.regular)
+                    .disabled(!appState.canStopTimer)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
-                .disabled(!appState.canStopTimer)
             } else {
-                Text(L10n.timerHint)
-                    .foregroundStyle(.white.opacity(0.82))
+                Text(L10n.timerNew)
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(.secondary)
 
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     TextField(L10n.timerPlaceholder, text: $customDescription)
-                        .textFieldStyle(.plain)
-                        .padding(10)
-                        .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .foregroundStyle(.white)
+                        .textFieldStyle(.roundedBorder)
 
                     Button {
                         Task {
@@ -168,7 +189,7 @@ struct ContentView: View {
                         Label("Start", systemImage: "play.fill")
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
+                    .controlSize(.regular)
                     .disabled(!appState.canStartTimer || (appState.forceProjects && selectedProjectId == nil))
                 }
 
@@ -176,8 +197,7 @@ struct ContentView: View {
                     ProjectPickerMenu(
                         projects: appState.projects,
                         selectedProjectId: selectedProjectId,
-                        onSelect: { selectedProjectId = $0 },
-                        onDarkBackground: true
+                        onSelect: { selectedProjectId = $0 }
                     )
 
                     if appState.forceProjects && selectedProjectId == nil {
@@ -186,91 +206,63 @@ struct ContentView: View {
                             .foregroundStyle(.orange)
                     }
 
+                    Spacer()
+
                     Button {
                         showCreateProject = true
                     } label: {
                         Image(systemName: "plus.circle")
+                            .font(.body)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.white.opacity(0.7))
-                }
-            }
-        }
-        .padding(20)
-        .background(
-            LinearGradient(
-                colors: [Color(red: 0.11, green: 0.15, blue: 0.23), Color(red: 0.16, green: 0.23, blue: 0.34)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
-    }
-
-    @ViewBuilder
-    private var runningProjectPicker: some View {
-        if let entry = appState.runningEntry {
-            ProjectPickerMenu(
-                projects: appState.projects,
-                selectedProjectId: entry.projectId,
-                onSelect: { newId in
-                    Task { await appState.changeEntryProject(entryId: entry.id, projectId: newId) }
-                },
-                onDarkBackground: true
-            )
-        }
-    }
-
-    private var favoritesSection: some View {
-        SectionShell(title: L10n.favorites) {
-            if appState.favoriteTemplates.isEmpty {
-                Text(L10n.favoritesEmpty)
-                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(appState.favoriteTemplates) { template in
-                        FavoriteRow(
-                            title: template.description,
-                            subtitle: template.lastUsed == .distantPast ? L10n.noLastUse : L10n.lastUsed(template.lastUsed.shortDateTime),
-                            projectName: appState.projectName(for: template.projectId),
-                            projectColorHex: appState.projectColorHex(for: template.projectId),
-                            onUnfavorite: { appState.toggleFavorite(description: template.description) },
-                            onStart: { Task { await appState.startTimer(using: template.description, projectId: template.projectId) } },
-                            isStartDisabled: !appState.canStartTimer || (appState.forceProjects && template.projectId == nil)
-                        )
-                    }
                 }
             }
         }
+        .padding(16)
+        .background(Color(.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(.separatorColor), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
     }
+
+    // MARK: - Quick start
 
     private var quickStartSection: some View {
-        SectionShell(title: L10n.quickStart) {
-            if appState.quickStartTemplates.isEmpty {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.quickStart)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+
+            if appState.quickStartItems.isEmpty {
                 Text(L10n.quickStartEmpty)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.vertical, 8)
             } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(appState.quickStartTemplates) { template in
-                        QuickStartMinimalRow(
-                            title: template.description,
-                            projectName: appState.projectName(for: template.projectId),
-                            projectColorHex: appState.projectColorHex(for: template.projectId),
-                            onStart: { Task { await appState.startTimer(using: template.description, projectId: template.projectId) } },
-                            isStartDisabled: !appState.canStartTimer || (appState.forceProjects && template.projectId == nil)
+                VStack(spacing: 2) {
+                    ForEach(appState.quickStartItems) { item in
+                        QuickStartRow(
+                            item: item,
+                            projectName: appState.projectName(for: item.projectId),
+                            projectColorHex: appState.projectColorHex(for: item.projectId),
+                            onToggleFavorite: {
+                                appState.toggleFavorite(description: item.description)
+                            },
+                            onStart: {
+                                Task { await appState.startTimer(using: item.description, projectId: item.projectId) }
+                            },
+                            onEditLastEntry: {
+                                if let entry = appState.recentEntries.first(where: {
+                                    ($0.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == item.description
+                                }) {
+                                    editingEntry = entry
+                                }
+                            },
+                            isStartDisabled: !appState.canStartTimer || (appState.forceProjects && item.projectId == nil)
                         )
                     }
                 }
@@ -278,90 +270,9 @@ struct ContentView: View {
         }
     }
 
-    private var recentEntriesSection: some View {
-        SectionShell(title: L10n.recentEntries) {
-            if groupedRecentEntries.isEmpty {
-                Text(L10n.recentEntriesEmpty)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            } else {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(groupedRecentEntries) { section in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(section.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
+    // MARK: - Status bar
 
-                            LazyVStack(spacing: 8) {
-                                ForEach(section.entries) { entry in
-                                    RecentEntryRow(
-                                        entry: entry,
-                                        projectName: appState.projectName(for: entry.projectId),
-                                        projectColorHex: appState.projectColorHex(for: entry.projectId),
-                                        isFavorite: appState.isFavorite(normalizedDescription(for: entry)),
-                                        onToggleFavorite: {
-                                            appState.toggleFavorite(description: normalizedDescription(for: entry))
-                                        },
-                                        onStart: {
-                                            Task { await appState.startTimer(using: normalizedDescription(for: entry), projectId: entry.projectId) }
-                                        },
-                                        onEdit: {
-                                            editingEntry = entry
-                                        },
-                                        isStartDisabled: !appState.canStartTimer || (appState.forceProjects && entry.projectId == nil)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var groupedRecentEntries: [RecentEntrySection] {
-        guard !appState.recentEntries.isEmpty else { return [] }
-
-        let calendar = Calendar.current
-        let now = Date()
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? .distantPast
-
-        var today: [ClockifyTimeEntry] = []
-        var yesterday: [ClockifyTimeEntry] = []
-        var thisWeek: [ClockifyTimeEntry] = []
-        var older: [ClockifyTimeEntry] = []
-
-        for entry in appState.recentEntries {
-            let start = entry.timeInterval.start
-
-            if calendar.isDateInToday(start) {
-                today.append(entry)
-            } else if calendar.isDateInYesterday(start) {
-                yesterday.append(entry)
-            } else if start >= weekStart {
-                thisWeek.append(entry)
-            } else {
-                older.append(entry)
-            }
-        }
-
-        var result: [RecentEntrySection] = []
-        if !today.isEmpty { result.append(RecentEntrySection(title: L10n.today, entries: today)) }
-        if !yesterday.isEmpty { result.append(RecentEntrySection(title: L10n.yesterday, entries: yesterday)) }
-        if !thisWeek.isEmpty { result.append(RecentEntrySection(title: L10n.thisWeek, entries: thisWeek)) }
-        if !older.isEmpty { result.append(RecentEntrySection(title: L10n.older, entries: older)) }
-
-        return result
-    }
-
-    private func normalizedDescription(for entry: ClockifyTimeEntry) -> String {
-        (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var statusSection: some View {
+    private var statusBar: some View {
         HStack(spacing: 10) {
             if appState.isLoading {
                 ProgressView()
@@ -377,19 +288,85 @@ struct ContentView: View {
 
             Text(L10n.autoRefresh)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 2)
     }
 }
 
-// MARK: - Reusable project picker menu
+// MARK: - Quick start row
+
+private struct QuickStartRow: View {
+    let item: QuickStartItem
+    let projectName: String?
+    let projectColorHex: String?
+    let onToggleFavorite: () -> Void
+    let onStart: () -> Void
+    let onEditLastEntry: () -> Void
+    let isStartDisabled: Bool
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                onToggleFavorite()
+            } label: {
+                Image(systemName: item.isFavorite ? "star.fill" : "star")
+                    .font(.system(size: 12))
+                    .foregroundStyle(item.isFavorite ? .yellow : Color(.tertiaryLabelColor))
+            }
+            .buttonStyle(.plain)
+
+            Text(item.description)
+                .font(.system(size: 13, weight: .medium))
+                .lineLimit(1)
+
+            if let projectName {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color(hex: projectColorHex ?? "") ?? .gray)
+                        .frame(width: 6, height: 6)
+                    Text(projectName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                onStart()
+            } label: {
+                Text("Start")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .disabled(isStartDisabled)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(isHovered ? Color(.quaternaryLabelColor) : .clear)
+        )
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .contextMenu {
+            Button(L10n.editLastEntry) {
+                onEditLastEntry()
+            }
+        }
+    }
+}
+
+// MARK: - Project picker menu
 
 private struct ProjectPickerMenu: View {
     let projects: [ClockifyProject]
     let selectedProjectId: String?
     let onSelect: (String?) -> Void
-    var onDarkBackground: Bool = false
 
     var body: some View {
         Menu {
@@ -420,241 +397,25 @@ private struct ProjectPickerMenu: View {
                    let project = projects.first(where: { $0.id == id }) {
                     Circle()
                         .fill(Color(hex: project.color ?? "") ?? .gray)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 7, height: 7)
                     Text(project.name)
                         .font(.caption.weight(.medium))
-                        .foregroundColor(onDarkBackground ? .white : nil)
                 } else {
                     Image(systemName: "folder")
                         .font(.caption)
-                        .foregroundColor(onDarkBackground ? .white : nil)
                     Text(L10n.noProject)
                         .font(.caption.weight(.medium))
-                        .foregroundColor(onDarkBackground ? .white : nil)
                 }
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption2)
-                    .foregroundColor(onDarkBackground ? .white : nil)
             }
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(
-                onDarkBackground ? Color.white.opacity(0.2) : Color.primary.opacity(0.12),
-                in: Capsule()
-            )
+            .background(Color(.quaternaryLabelColor), in: Capsule())
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-    }
-}
-
-// MARK: - Supporting types
-
-private struct RecentEntrySection: Identifiable {
-    let title: String
-    let entries: [ClockifyTimeEntry]
-
-    var id: String { title }
-}
-
-private struct SectionShell<Content: View>: View {
-    let title: String
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-
-            content
-        }
-    }
-}
-
-private struct FavoriteRow: View {
-    let title: String
-    let subtitle: String
-    let projectName: String?
-    let projectColorHex: String?
-    let onUnfavorite: () -> Void
-    let onStart: () -> Void
-    let isStartDisabled: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "star.fill")
-                .foregroundStyle(.yellow)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                HStack(spacing: 8) {
-                    if let projectName {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color(hex: projectColorHex ?? "") ?? .gray)
-                                .frame(width: 8, height: 8)
-                            Text(projectName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Button {
-                onUnfavorite()
-            } label: {
-                Image(systemName: "star.fill")
-            }
-            .buttonStyle(.bordered)
-
-            Button("Start") {
-                onStart()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
-            .disabled(isStartDisabled)
-        }
-        .padding(12)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
-    }
-}
-
-private struct QuickStartMinimalRow: View {
-    let title: String
-    let projectName: String?
-    let projectColorHex: String?
-    let onStart: () -> Void
-    let isStartDisabled: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "play.circle")
-                .foregroundStyle(.secondary)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                if let projectName {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(Color(hex: projectColorHex ?? "") ?? .gray)
-                            .frame(width: 8, height: 8)
-                        Text(projectName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            Spacer()
-
-            Button("Start") {
-                onStart()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
-            .disabled(isStartDisabled)
-        }
-        .padding(12)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
-    }
-}
-
-private struct RecentEntryRow: View {
-    let entry: ClockifyTimeEntry
-    let projectName: String?
-    let projectColorHex: String?
-    let isFavorite: Bool
-    let onToggleFavorite: () -> Void
-    let onStart: () -> Void
-    let onEdit: () -> Void
-    let isStartDisabled: Bool
-
-    private var description: String {
-        let value = (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return value.isEmpty ? L10n.noDescription : value
-    }
-
-    private var timeRange: String {
-        entry.timeInterval.start.shortDateTime + " - " + (entry.timeInterval.end?.shortDateTime ?? L10n.inProgress)
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(description)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                HStack(spacing: 8) {
-                    if let projectName {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color(hex: projectColorHex ?? "") ?? .gray)
-                                .frame(width: 8, height: 8)
-                            Text(projectName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Text(timeRange)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Button {
-                onToggleFavorite()
-            } label: {
-                Image(systemName: isFavorite ? "star.fill" : "star")
-            }
-            .buttonStyle(.bordered)
-
-            Button("Start") {
-                onStart()
-            }
-            .buttonStyle(.bordered)
-            .disabled(isStartDisabled)
-
-            Menu {
-                Button(L10n.edit) {
-                    onEdit()
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-        }
-        .padding(12)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
     }
 }
 
@@ -695,7 +456,7 @@ private struct SettingsSheet: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
+                .tint(.accentColor)
             }
 
             if !appState.userName.isEmpty {
@@ -793,7 +554,7 @@ private struct EntryEditSheet: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
+                .tint(.accentColor)
                 .disabled(!isValid || isSaving || appState.isLoading)
             }
         }
@@ -865,7 +626,7 @@ private struct CreateProjectSheet: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(red: 1.0, green: 0.39, blue: 0.29))
+                .tint(.accentColor)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving || appState.isLoading)
             }
         }
