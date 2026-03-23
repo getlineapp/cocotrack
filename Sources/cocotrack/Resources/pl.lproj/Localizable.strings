@@ -1,38 +1,26 @@
 /* Top bar */
-"app.subtitle" = "Timer-first workflow. Auto odswiezanie historii co 30s.";
 "settings" = "Ustawienia";
 
-/* Connection pill */
+/* Connection */
 "status.connected" = "Polaczono";
 "status.needsConnection" = "Wymaga polaczenia";
 "status.notConfigured" = "Brak konfiguracji";
 
-/* Timer hero */
+/* Timer */
 "timer.active" = "Aktywny timer";
 "timer.new" = "Nowy timer";
-"timer.hint" = "Wpisz opis i kliknij Start albo odpal gotowy timer z listy nizej.";
 "timer.placeholder" = "Nad czym pracujesz?";
+"timer.configureConnection" = "Skonfiguruj polaczenie z Clockify";
 
 /* Sections */
-"section.favorites" = "Ulubione";
-"section.favorites.empty" = "Przypnij timer gwiazdka z historii, a bedzie zawsze na gorze.";
 "section.quickStart" = "Szybki start";
 "section.quickStart.empty" = "Brak historii. Po kilku wpisach pojawia sie tu gotowe timery.";
-"section.recentEntries" = "Ostatnie wpisy";
-"section.recentEntries.empty" = "Brak wpisow do wyswietlenia.";
-
-/* Time grouping */
-"time.today" = "Dzis";
-"time.yesterday" = "Wczoraj";
-"time.thisWeek" = "W tym tygodniu";
-"time.older" = "Starsze";
 
 /* Entry details */
 "entry.noDescription" = "Bez opisu";
 "entry.inProgress" = "w toku";
-"entry.noLastUse" = "Brak ostatniego uzycia";
-"entry.lastUsed" = "Ostatnio: %@";
 "entry.edit" = "Edytuj";
+"entry.editLast" = "Edytuj ostatni wpis";
 
 /* Status bar */
 "status.ready" = "Gotowe";

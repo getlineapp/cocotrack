@@ -2,39 +2,28 @@ import Foundation
 
 enum L10n {
     // MARK: - Top bar
-    static let appSubtitle = NSLocalizedString("app.subtitle", bundle: .module, comment: "App subtitle in top bar")
     static let settings = NSLocalizedString("settings", bundle: .module, comment: "Settings button label")
 
-    // MARK: - Connection pill
+    // MARK: - Connection
     static let statusConnected = NSLocalizedString("status.connected", bundle: .module, comment: "Connection status: connected")
     static let statusNeedsConnection = NSLocalizedString("status.needsConnection", bundle: .module, comment: "Connection status: needs connection")
     static let statusNotConfigured = NSLocalizedString("status.notConfigured", bundle: .module, comment: "Connection status: not configured")
 
-    // MARK: - Timer hero
+    // MARK: - Timer
     static let timerActive = NSLocalizedString("timer.active", bundle: .module, comment: "Active timer heading")
     static let timerNew = NSLocalizedString("timer.new", bundle: .module, comment: "New timer heading")
-    static let timerHint = NSLocalizedString("timer.hint", bundle: .module, comment: "Hint text when timer is not running")
     static let timerPlaceholder = NSLocalizedString("timer.placeholder", bundle: .module, comment: "Timer description placeholder")
+    static let configureConnection = NSLocalizedString("timer.configureConnection", bundle: .module, comment: "Prompt to configure connection")
 
     // MARK: - Sections
-    static let favorites = NSLocalizedString("section.favorites", bundle: .module, comment: "Favorites section title")
-    static let favoritesEmpty = NSLocalizedString("section.favorites.empty", bundle: .module, comment: "Favorites section empty hint")
     static let quickStart = NSLocalizedString("section.quickStart", bundle: .module, comment: "Quick start section title")
     static let quickStartEmpty = NSLocalizedString("section.quickStart.empty", bundle: .module, comment: "Quick start section empty hint")
-    static let recentEntries = NSLocalizedString("section.recentEntries", bundle: .module, comment: "Recent entries section title")
-    static let recentEntriesEmpty = NSLocalizedString("section.recentEntries.empty", bundle: .module, comment: "Recent entries section empty hint")
-
-    // MARK: - Time grouping
-    static let today = NSLocalizedString("time.today", bundle: .module, comment: "Today group label")
-    static let yesterday = NSLocalizedString("time.yesterday", bundle: .module, comment: "Yesterday group label")
-    static let thisWeek = NSLocalizedString("time.thisWeek", bundle: .module, comment: "This week group label")
-    static let older = NSLocalizedString("time.older", bundle: .module, comment: "Older group label")
 
     // MARK: - Entry details
     static let noDescription = NSLocalizedString("entry.noDescription", bundle: .module, comment: "Placeholder for entries without description")
     static let inProgress = NSLocalizedString("entry.inProgress", bundle: .module, comment: "Label for entry still in progress")
-    static let noLastUse = NSLocalizedString("entry.noLastUse", bundle: .module, comment: "Label when favorite has no last use date")
     static let edit = NSLocalizedString("entry.edit", bundle: .module, comment: "Edit menu item")
+    static let editLastEntry = NSLocalizedString("entry.editLast", bundle: .module, comment: "Context menu: edit last entry")
 
     // MARK: - Status bar
     static let statusReady = NSLocalizedString("status.ready", bundle: .module, comment: "Ready status label")
@@ -103,10 +92,6 @@ enum L10n {
 
     static func connectedAs(_ name: String) -> String {
         String(format: NSLocalizedString("appState.connectedAs", bundle: .module, comment: "Status: connected as user"), name)
-    }
-
-    static func lastUsed(_ dateString: String) -> String {
-        String(format: NSLocalizedString("entry.lastUsed", bundle: .module, comment: "Last used date for favorite"), dateString)
     }
 
     static func userLabel(_ name: String) -> String {

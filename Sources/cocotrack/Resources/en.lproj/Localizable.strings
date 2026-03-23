@@ -1,38 +1,26 @@
 /* Top bar */
-"app.subtitle" = "Timer-first workflow. Auto refresh of history every 30s.";
 "settings" = "Settings";
 
-/* Connection pill */
+/* Connection */
 "status.connected" = "Connected";
 "status.needsConnection" = "Needs connection";
 "status.notConfigured" = "Not configured";
 
-/* Timer hero */
+/* Timer */
 "timer.active" = "Active timer";
 "timer.new" = "New timer";
-"timer.hint" = "Type a description and click Start, or launch a ready timer from the list below.";
 "timer.placeholder" = "What are you working on?";
+"timer.configureConnection" = "Configure Clockify connection";
 
 /* Sections */
-"section.favorites" = "Favorites";
-"section.favorites.empty" = "Star a timer from history and it will always appear at the top.";
 "section.quickStart" = "Quick start";
 "section.quickStart.empty" = "No history yet. After a few entries, ready-made timers will appear here.";
-"section.recentEntries" = "Recent entries";
-"section.recentEntries.empty" = "No entries to display.";
-
-/* Time grouping */
-"time.today" = "Today";
-"time.yesterday" = "Yesterday";
-"time.thisWeek" = "This week";
-"time.older" = "Older";
 
 /* Entry details */
 "entry.noDescription" = "No description";
 "entry.inProgress" = "in progress";
-"entry.noLastUse" = "No last use";
-"entry.lastUsed" = "Last used: %@";
 "entry.edit" = "Edit";
+"entry.editLast" = "Edit last entry";
 
 /* Status bar */
 "status.ready" = "Ready";
