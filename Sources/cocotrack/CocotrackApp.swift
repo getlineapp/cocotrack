@@ -10,7 +10,7 @@ struct CocotrackApp: App {
         // macOS applies the rounded-rectangle mask. Don't override with applicationIconImage.
         // For `swift run` (no Assets.car), fall back to the raw PNG from the SPM resource bundle.
         if NSImage(named: "AppIcon") == nil,
-           let url = Bundle.module.url(
+           let url = Bundle.localized.url(
                forResource: "icon_512x512@2x",
                withExtension: "png",
                subdirectory: "cocotrack.xcassets/AppIcon.appiconset"

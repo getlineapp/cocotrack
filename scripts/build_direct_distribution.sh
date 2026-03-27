@@ -44,6 +44,14 @@ chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
 
 mkdir -p "$RESOURCES_DIR"
 
+RESOURCE_BUNDLE="$BUILD_DIR/arm64-apple-macosx/release/cocotrack_cocotrack.bundle"
+if [[ -d "$RESOURCE_BUNDLE" ]]; then
+    cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/cocotrack_cocotrack.bundle"
+    echo "Copied SwiftPM resource bundle"
+else
+    echo "Warning: SwiftPM resource bundle not found at $RESOURCE_BUNDLE"
+fi
+
 echo "[2.5/6] Compiling Assets"
 if [[ -d "$ROOT_DIR/Sources/cocotrack/Resources/cocotrack.xcassets" ]]; then
     xcrun actool "$ROOT_DIR/Sources/cocotrack/Resources/cocotrack.xcassets" --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target "$MIN_MACOS_VERSION" --app-icon AppIcon --output-partial-info-plist "$BUILD_DIR/assets-Info.plist" >/dev/null
