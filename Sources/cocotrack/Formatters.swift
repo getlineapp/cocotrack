@@ -63,3 +63,37 @@ extension JSONEncoder {
         return encoder
     }
 }
+
+// MARK: - Duration formatting
+
+extension Int {
+    var formattedDuration: String {
+        let h = self / 3600
+        let m = (self % 3600) / 60
+        let s = self % 60
+        return String(format: "%02d:%02d:%02d", h, m, s)
+    }
+}
+
+// MARK: - Time entry helpers
+
+extension ClockifyTimeEntry {
+    var durationSeconds: Int? {
+        guard let end = timeInterval.end else { return nil }
+        return max(0, Int(end.timeIntervalSince(timeInterval.start)))
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    var timeRangeText: String {
+        let start = Self.timeFormatter.string(from: timeInterval.start)
+        if let end = timeInterval.end {
+            return "\(start) – \(Self.timeFormatter.string(from: end))"
+        }
+        return "\(start) – ..."
+    }
+}

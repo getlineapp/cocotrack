@@ -15,6 +15,10 @@
 /* Sections */
 "section.quickStart" = "Szybki start";
 "section.quickStart.empty" = "Brak historii. Po kilku wpisach pojawia sie tu gotowe timery.";
+"section.recentLog" = "Ostatnie wpisy";
+"section.recentLog.empty" = "Brak wpisow. Wpisy pojawia sie po pierwszym timerze.";
+"day.today" = "Dzis";
+"day.yesterday" = "Wczoraj";
 
 /* Entry details */
 "entry.noDescription" = "Bez opisu";

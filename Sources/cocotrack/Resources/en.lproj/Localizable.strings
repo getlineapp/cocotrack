@@ -15,6 +15,10 @@
 /* Sections */
 "section.quickStart" = "Quick start";
 "section.quickStart.empty" = "No history yet. After a few entries, ready-made timers will appear here.";
+"section.recentLog" = "Recent entries";
+"section.recentLog.empty" = "No entries yet. Entries will appear after your first timer.";
+"day.today" = "Today";
+"day.yesterday" = "Yesterday";
 
 /* Entry details */
 "entry.noDescription" = "No description";

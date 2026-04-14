@@ -31,6 +31,17 @@ struct ContentView: View {
                     quickStartSection
                         .padding(.horizontal, 18)
 
+                    if !appState.recentEntryGroups.isEmpty {
+                        Divider()
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 18)
+
+                        RecentTimeLogSection(onEditEntry: { entry in
+                            editingEntry = entry
+                        })
+                        .padding(.horizontal, 18)
+                    }
+
                     Spacer(minLength: 12)
 
                     statusBar

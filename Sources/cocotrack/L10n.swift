@@ -18,6 +18,10 @@ enum L10n {
     // MARK: - Sections
     static let quickStart = NSLocalizedString("section.quickStart", bundle: .localized, comment: "Quick start section title")
     static let quickStartEmpty = NSLocalizedString("section.quickStart.empty", bundle: .localized, comment: "Quick start section empty hint")
+    static let recentLog = NSLocalizedString("section.recentLog", bundle: .localized, comment: "Recent time log section title")
+    static let recentLogEmpty = NSLocalizedString("section.recentLog.empty", bundle: .localized, comment: "Recent time log empty hint")
+    static let today = NSLocalizedString("day.today", bundle: .localized, comment: "Today label")
+    static let yesterday = NSLocalizedString("day.yesterday", bundle: .localized, comment: "Yesterday label")
 
     // MARK: - Entry details
     static let noDescription = NSLocalizedString("entry.noDescription", bundle: .localized, comment: "Placeholder for entries without description")

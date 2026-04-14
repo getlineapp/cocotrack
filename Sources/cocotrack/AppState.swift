@@ -27,6 +27,15 @@ struct QuickStartItem: Identifiable {
     var id: String { description }
 }
 
+struct DayGroup: Identifiable {
+    let date: Date
+    let label: String
+    let entries: [ClockifyTimeEntry]
+    let totalSeconds: Int
+
+    var id: Date { date }
+}
+
 @MainActor
 final class AppState: ObservableObject {
     @Published var apiKey: String
@@ -199,6 +208,42 @@ final class AppState: ObservableObject {
         return projects.first(where: { $0.id == id })?.color
     }
 
+    private static let dayLabelFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE, d MMM"
+        return f
+    }()
+
+    var recentEntryGroups: [DayGroup] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: recentEntries) { entry in
+            calendar.startOfDay(for: entry.timeInterval.start)
+        }
+
+        let now = Date()
+        let todayStart = calendar.startOfDay(for: now)
+        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+
+        return grouped
+            .sorted { $0.key > $1.key }
+            .map { (date, entries) in
+                let label: String
+                if date == todayStart {
+                    label = L10n.today
+                } else if date == yesterdayStart {
+                    label = L10n.yesterday
+                } else {
+                    label = Self.dayLabelFormatter.string(from: date)
+                }
+
+                let totalSeconds = entries
+                    .compactMap(\.durationSeconds)
+                    .reduce(0, +)
+
+                return DayGroup(date: date, label: label, entries: entries, totalSeconds: totalSeconds)
+            }
+    }
+
     func connectAndRefresh() async {
         await runLoadingTask {
             persistSettings()
@@ -216,7 +261,7 @@ final class AppState: ObservableObject {
             userName = user.name ?? user.email ?? user.id
 
             async let running = client.fetchRunningTimeEntry(workspaceId: resolvedWorkspace, userId: user.id)
-            async let recent = client.fetchRecentTimeEntries(workspaceId: resolvedWorkspace, userId: user.id, limit: 25)
+            async let recent = client.fetchRecentTimeEntries(workspaceId: resolvedWorkspace, userId: user.id, limit: 50)
             async let projectsList = client.fetchProjects(workspaceId: resolvedWorkspace)
             async let workspaceInfo = client.fetchWorkspace(workspaceId: resolvedWorkspace)
 
@@ -235,7 +280,7 @@ final class AppState: ObservableObject {
         await runLoadingTask {
             let context = try contextOrThrow()
             async let running = context.client.fetchRunningTimeEntry(workspaceId: context.workspaceId, userId: context.userId)
-            async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 25)
+            async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 50)
             async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
 
             runningEntry = try await running
@@ -438,7 +483,7 @@ final class AppState: ObservableObject {
     private func refreshEntriesWithoutSpinner(context: Context) async {
         do {
             async let running = context.client.fetchRunningTimeEntry(workspaceId: context.workspaceId, userId: context.userId)
-            async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 25)
+            async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 50)
             async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
 
             runningEntry = try await running

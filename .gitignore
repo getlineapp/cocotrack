@@ -16,3 +16,9 @@ DerivedData/
 
 # Secrets
 .netrc
+
+# Firebase
+firebase-debug.log
+
+# Superpowers
+.superpowers/
