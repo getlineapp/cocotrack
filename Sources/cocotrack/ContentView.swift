@@ -11,42 +11,42 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(.windowBackgroundColor)
+            DS.Palette.bg
                 .ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     toolbar
-                        .padding(.horizontal, 18)
-                        .padding(.top, 14)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
+                        .padding(.top, DS.Metric.topPadding)
                         .padding(.bottom, 12)
 
                     timerCard
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
 
-                    Divider()
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 18)
+                    DSDivider()
+                        .padding(.vertical, DS.Metric.dividerVMargin)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
 
                     quickStartSection
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
 
                     if !appState.recentEntryGroups.isEmpty {
-                        Divider()
-                            .padding(.vertical, 14)
-                            .padding(.horizontal, 18)
+                        DSDivider()
+                            .padding(.vertical, DS.Metric.dividerVMargin)
+                            .padding(.horizontal, DS.Metric.sectionPaddingH)
 
                         RecentTimeLogSection(onEditEntry: { entry in
                             editingEntry = entry
                         })
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
                     }
 
                     Spacer(minLength: 12)
 
                     statusBar
-                        .padding(.horizontal, 18)
-                        .padding(.bottom, 10)
+                        .padding(.horizontal, DS.Metric.sectionPaddingH)
+                        .padding(.bottom, DS.Metric.bottomPadding)
                 }
             }
         }
@@ -76,20 +76,17 @@ struct ContentView: View {
     // MARK: - Toolbar
 
     private var toolbar: some View {
-        HStack(alignment: .center) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(appState.isConnected ? Color.green : (appState.isConfigured ? Color.orange : Color.gray))
-                    .frame(width: 8, height: 8)
+        HStack(alignment: .center, spacing: 8) {
+            StatusDot(kind: appState.isConnected ? .ok : (appState.isConfigured ? .warn : .off))
 
-                Text("Cocotrack")
-                    .font(.system(size: 13, weight: .semibold))
+            Text("Cocotrack")
+                .font(DS.Font.appName)
+                .foregroundStyle(DS.Palette.ink)
 
-                if !appState.userName.isEmpty {
-                    Text("· \(appState.userName)")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
+            if !appState.userName.isEmpty {
+                Text("· \(appState.userName)")
+                    .font(DS.Font.appSub)
+                    .foregroundStyle(DS.Palette.ink3)
             }
 
             Spacer()
@@ -98,169 +95,198 @@ struct ContentView: View {
                 Task { await appState.refreshEntries() }
             } label: {
                 Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 11, weight: .semibold))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.dsStandardIcon)
             .disabled(appState.isLoading || !appState.isConnected)
 
             Button {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape")
+                    .font(.system(size: 11, weight: .semibold))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.dsStandardIcon)
         }
     }
 
     // MARK: - Timer card
 
     private var timerCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !appState.isConnected {
-                VStack(spacing: 10) {
-                    Text(L10n.configureConnection)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Button(L10n.settings) {
-                        showSettings = true
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-            } else if appState.isTracking {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 6, height: 6)
-                    Text(L10n.timerActive)
-                        .font(.caption.weight(.semibold))
-                        .textCase(.uppercase)
-                        .foregroundStyle(.secondary)
-                }
-
-                Text(appState.runningDescription)
-                    .font(.system(size: 15, weight: .semibold))
-                    .lineLimit(2)
-
-                if let entry = appState.runningEntry {
-                    ProjectPickerMenu(
-                        projects: appState.projects,
-                        selectedProjectId: entry.projectId,
-                        onSelect: { newId in
-                            Task { await appState.changeEntryProject(entryId: entry.id, projectId: newId) }
-                        }
-                    )
-                }
-
-                if appState.forceProjects && appState.runningEntry?.projectId == nil {
-                    Text(L10n.projectRequiredForStop)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.red)
-                }
-
-                HStack {
-                    Text(appState.elapsedText)
-                        .font(.system(size: 32, weight: .bold, design: .monospaced))
-                        .monospacedDigit()
-                        .onTapGesture {
-                            if let entry = appState.runningEntry {
-                                editingEntry = entry
-                            }
-                        }
-                        .help("Kliknij aby edytować wpis")
-
-                    Spacer()
-
-                    Button {
-                        Task { await appState.stopTimer() }
-                    } label: {
-                        Label("Stop", systemImage: "stop.fill")
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-                    .controlSize(.regular)
-                    .disabled(!appState.canStopTimer)
-                }
-            } else {
-                Text(L10n.timerNew)
-                    .font(.caption.weight(.semibold))
-                    .textCase(.uppercase)
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 8) {
-                    TextField(L10n.timerPlaceholder, text: $customDescription)
-                        .textFieldStyle(.roundedBorder)
-
-                    Button {
-                        Task {
-                            let started = await appState.startTimer(using: customDescription, projectId: selectedProjectId)
-                            if started {
-                                customDescription = ""
-                                selectedProjectId = nil
-                            }
-                        }
-                    } label: {
-                        Label("Start", systemImage: "play.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-                    .disabled(!appState.canStartTimer || (appState.forceProjects && selectedProjectId == nil))
-                }
-
-                HStack(spacing: 8) {
-                    ProjectPickerMenu(
-                        projects: appState.projects,
-                        selectedProjectId: selectedProjectId,
-                        onSelect: { selectedProjectId = $0 }
-                    )
-
-                    if appState.forceProjects && selectedProjectId == nil {
-                        Text(L10n.projectRequiredHint)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        showCreateProject = true
-                    } label: {
-                        Image(systemName: "plus.circle")
-                            .font(.body)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+        DSCard {
+            VStack(alignment: .leading, spacing: 10) {
+                if !appState.isConnected {
+                    timerCardUnconfigured
+                } else if appState.isTracking {
+                    timerCardActive
+                } else {
+                    timerCardEmpty
                 }
             }
         }
-        .padding(16)
-        .background(Color(.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(.separatorColor), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
+    }
+
+    @ViewBuilder
+    private var timerCardUnconfigured: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(DS.Palette.card2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(DS.Palette.line, lineWidth: 0.5)
+                    )
+                Image(systemName: "gearshape")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(DS.Palette.ink3)
+            }
+            .frame(width: 44, height: 44)
+
+            Text(L10n.configureConnection)
+                .font(DS.Font.configHeadline)
+                .foregroundStyle(DS.Palette.ink)
+                .multilineTextAlignment(.center)
+
+            Text(L10n.settingsSubtitle)
+                .font(DS.Font.configSub)
+                .foregroundStyle(DS.Palette.ink3)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 280)
+                .lineSpacing(2)
+
+            Button(L10n.settings) {
+                showSettings = true
+            }
+            .buttonStyle(.dsStandard)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+    }
+
+    @ViewBuilder
+    private var timerCardActive: some View {
+        if let entry = appState.runningEntry {
+            HStack(spacing: 6) {
+                LiveDot(size: 6)
+                SectionLabel(text: L10n.timerActive)
+            }
+            .padding(.bottom, 2)
+
+            Text(appState.runningDescription)
+                .font(DS.Font.runningDesc)
+                .foregroundStyle(DS.Palette.ink)
+                .lineLimit(2)
+                .padding(.bottom, 2)
+
+            HStack(spacing: 8) {
+                ProjectPickerMenu(
+                    projects: appState.projects,
+                    selectedProjectId: entry.projectId,
+                    strong: true,
+                    onSelect: { newId in
+                        Task { await appState.changeEntryProject(entryId: entry.id, projectId: newId) }
+                    }
+                )
+
+                if appState.forceProjects && entry.projectId == nil {
+                    Text(L10n.projectRequiredForStop)
+                        .font(DS.Font.warnText)
+                        .foregroundStyle(DS.Palette.bad)
+                }
+            }
+            .padding(.bottom, 6)
+
+            HStack(alignment: .bottom) {
+                ElapsedText(text: appState.elapsedText, font: DS.Font.elapsedHero)
+                    .onTapGesture {
+                        editingEntry = entry
+                    }
+                    .help("Kliknij aby edytować wpis")
+
+                Spacer()
+
+                Button {
+                    Task { await appState.stopTimer() }
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                }
+                .buttonStyle(.dsDanger)
+                .disabled(!appState.canStopTimer)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var timerCardEmpty: some View {
+        SectionLabel(text: L10n.timerNew)
+            .padding(.bottom, 2)
+
+        HStack(spacing: 8) {
+            TextField(L10n.timerPlaceholder, text: $customDescription)
+                .textFieldStyle(.ds)
+                .onSubmit {
+                    triggerStart()
+                }
+
+            Button {
+                triggerStart()
+            } label: {
+                Label("Start", systemImage: "play.fill")
+            }
+            .buttonStyle(.dsProminent)
+            .disabled(!appState.canStartTimer || (appState.forceProjects && selectedProjectId == nil))
+        }
+
+        HStack(spacing: 8) {
+            ProjectPickerMenu(
+                projects: appState.projects,
+                selectedProjectId: selectedProjectId,
+                onSelect: { selectedProjectId = $0 }
+            )
+
+            if appState.forceProjects && selectedProjectId == nil {
+                Text(L10n.projectRequiredHint)
+                    .font(DS.Font.warnText)
+                    .foregroundStyle(DS.Palette.warn)
+            }
+
+            Spacer()
+
+            Button {
+                showCreateProject = true
+            } label: {
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 13, weight: .regular))
+            }
+            .buttonStyle(.dsGhostIcon)
+        }
+    }
+
+    private func triggerStart() {
+        guard appState.canStartTimer else { return }
+        Task {
+            let started = await appState.startTimer(using: customDescription, projectId: selectedProjectId)
+            if started {
+                customDescription = ""
+                selectedProjectId = nil
+            }
+        }
     }
 
     // MARK: - Quick start
 
     private var quickStartSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(L10n.quickStart)
-                .font(.caption.weight(.semibold))
-                .textCase(.uppercase)
-                .foregroundStyle(.secondary)
+            SectionLabel(text: L10n.quickStart)
 
             if appState.quickStartItems.isEmpty {
                 Text(L10n.quickStartEmpty)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(DS.Palette.ink3)
+                    .lineSpacing(2)
+                    .padding(.vertical, 10)
             } else {
-                VStack(spacing: 2) {
+                VStack(spacing: 1) {
                     ForEach(appState.quickStartItems) { item in
                         QuickStartRow(
                             item: item,
@@ -283,6 +309,7 @@ struct ContentView: View {
                         )
                     }
                 }
+                .padding(.top, 4)
             }
         }
     }
@@ -290,22 +317,29 @@ struct ContentView: View {
     // MARK: - Status bar
 
     private var statusBar: some View {
-        HStack(spacing: 10) {
-            if appState.isLoading {
-                ProgressView()
-                    .controlSize(.small)
+        VStack(spacing: 0) {
+            DSDivider()
+                .padding(.bottom, 8)
+
+            HStack(spacing: 8) {
+                if appState.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.7)
+                        .frame(width: 12, height: 12)
+                }
+
+                Text(appState.statusMessage.isEmpty ? L10n.statusReady : appState.statusMessage)
+                    .font(DS.Font.statusBar)
+                    .foregroundStyle(DS.Palette.ink3)
+                    .lineLimit(2)
+
+                Spacer()
+
+                Text(L10n.autoRefresh)
+                    .font(DS.Font.statusBarRight)
+                    .foregroundStyle(DS.Palette.ink4)
             }
-
-            Text(appState.statusMessage.isEmpty ? L10n.statusReady : appState.statusMessage)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-
-            Spacer()
-
-            Text(L10n.autoRefresh)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
         }
     }
 }
@@ -322,54 +356,65 @@ private struct QuickStartRow: View {
     let isStartDisabled: Bool
 
     @State private var isHovered = false
+    @State private var isStartHovered = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Button {
                 onToggleFavorite()
             } label: {
                 Image(systemName: item.isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 12))
-                    .foregroundStyle(item.isFavorite ? .yellow : Color(.tertiaryLabelColor))
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(item.isFavorite ? Color(red: 0.91, green: 0.65, blue: 0.23) : DS.Palette.ink4)
+                    .frame(width: DS.Metric.starWidth, alignment: .center)
             }
             .buttonStyle(.plain)
 
             Text(item.description)
-                .font(.system(size: 13, weight: .medium))
+                .font(DS.Font.qsDesc)
+                .foregroundStyle(DS.Palette.ink)
                 .lineLimit(1)
+                .truncationMode(.tail)
+
+            Spacer(minLength: 8)
 
             if let projectName {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Circle()
-                        .fill(Color(hex: projectColorHex ?? "") ?? .gray)
+                        .fill(Color(hex: projectColorHex ?? "") ?? DS.Palette.ink4)
                         .frame(width: 6, height: 6)
                     Text(projectName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(DS.Font.qsProj)
+                        .foregroundStyle(DS.Palette.ink3)
+                        .lineLimit(1)
                 }
+                .frame(maxWidth: 180, alignment: .trailing)
             }
-
-            Spacer()
 
             Button {
                 onStart()
             } label: {
                 Text("Start")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(Color.accentColor)
+                    .font(DS.Font.qsStart)
+                    .foregroundStyle(isStartDisabled ? DS.Palette.ink4 : DS.Palette.accentInk)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(isStartHovered && !isStartDisabled ? DS.Palette.accentBg : Color.clear)
+                    )
             }
             .buttonStyle(.plain)
             .disabled(isStartDisabled)
+            .onHover { isStartHovered = $0 }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isHovered ? Color(.quaternaryLabelColor) : .clear)
+            RoundedRectangle(cornerRadius: DS.Metric.rowRadius, style: .continuous)
+                .fill(isHovered ? DS.Palette.card2 : .clear)
         )
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        .onHover { isHovered = $0 }
         .contextMenu {
             Button(L10n.editLastEntry) {
                 onEditLastEntry()
@@ -380,9 +425,10 @@ private struct QuickStartRow: View {
 
 // MARK: - Project picker menu
 
-private struct ProjectPickerMenu: View {
+struct ProjectPickerMenu: View {
     let projects: [ClockifyProject]
     let selectedProjectId: String?
+    var strong: Bool = false
     let onSelect: (String?) -> Void
 
     var body: some View {
@@ -409,29 +455,10 @@ private struct ProjectPickerMenu: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
-                if let id = selectedProjectId,
-                   let project = projects.first(where: { $0.id == id }) {
-                    Circle()
-                        .fill(Color(hex: project.color ?? "") ?? .gray)
-                        .frame(width: 7, height: 7)
-                    Text(project.name)
-                        .font(.caption.weight(.medium))
-                } else {
-                    Image(systemName: "folder")
-                        .font(.caption)
-                    Text(L10n.noProject)
-                        .font(.caption.weight(.medium))
-                }
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2)
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(.quaternaryLabelColor), in: Capsule())
+            ProjectCapsuleMenuLabel(selectedProjectId: selectedProjectId, projects: projects, strong: strong)
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
     }
 }
@@ -443,47 +470,72 @@ private struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(L10n.settingsTitle)
-                .font(.title3.weight(.semibold))
+                .font(DS.Font.sheetTitle)
+                .foregroundStyle(DS.Palette.ink)
+                .padding(.bottom, 4)
 
             Text(L10n.settingsSubtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(DS.Font.sheetSub)
+                .foregroundStyle(DS.Palette.ink3)
+                .lineSpacing(2)
+                .padding(.bottom, 14)
 
-            SecureField("API key", text: $appState.apiKey)
-                .textFieldStyle(.roundedBorder)
+            VStack(alignment: .leading, spacing: 10) {
+                formRow(label: "API key") {
+                    SecureField("API key", text: $appState.apiKey)
+                        .textFieldStyle(.ds)
+                }
 
-            TextField("Base URL", text: $appState.baseURL)
-                .textFieldStyle(.roundedBorder)
+                formRow(label: "Base URL") {
+                    TextField("Base URL", text: $appState.baseURL)
+                        .textFieldStyle(.ds)
+                }
 
-            TextField(L10n.settingsWorkspaceHint, text: $appState.workspaceOverride)
-                .textFieldStyle(.roundedBorder)
+                formRow(label: L10n.settingsWorkspaceHint) {
+                    TextField(L10n.settingsWorkspaceHint, text: $appState.workspaceOverride)
+                        .textFieldStyle(.ds)
+                }
+            }
+            .padding(.bottom, 14)
 
             HStack {
-                Button(L10n.settingsClose) {
-                    dismiss()
+                if !appState.userName.isEmpty {
+                    Text(L10n.userLabel(appState.userName))
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Palette.ink3)
                 }
 
                 Spacer()
+
+                Button(L10n.settingsClose) {
+                    dismiss()
+                }
+                .buttonStyle(.dsStandard)
 
                 Button(L10n.settingsSaveConnect) {
                     Task {
                         await appState.connectAndRefresh()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
-            }
-
-            if !appState.userName.isEmpty {
-                Text(L10n.userLabel(appState.userName))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .buttonStyle(DSButtonStyle(kind: .prominent))
             }
         }
-        .padding(18)
+        .padding(EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18))
         .frame(width: 460)
+        .background(DS.Palette.bg)
+    }
+
+    @ViewBuilder
+    private func formRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(DS.Font.formLabel)
+                .tracking(0.8)
+                .foregroundStyle(DS.Palette.ink3)
+            content()
+        }
     }
 }
 
@@ -524,37 +576,74 @@ private struct EntryEditSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(L10n.editEntryTitle)
-                .font(.headline)
+                .font(DS.Font.sheetTitle)
+                .foregroundStyle(DS.Palette.ink)
+                .padding(.bottom, 12)
 
-            TextField(L10n.editEntryDescription, text: $description)
-                .textFieldStyle(.roundedBorder)
+            VStack(alignment: .leading, spacing: 10) {
+                TextField(L10n.editEntryDescription, text: $description)
+                    .textFieldStyle(.ds)
 
-            HStack(spacing: 8) {
-                Text(L10n.projectLabel)
-                    .font(.subheadline)
+                HStack(spacing: 10) {
+                    Text(L10n.projectLabel)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(DS.Palette.ink2)
+                        .frame(width: 90, alignment: .leading)
 
-                ProjectPickerMenu(
-                    projects: appState.projects,
-                    selectedProjectId: selectedProjectId,
-                    onSelect: { selectedProjectId = $0 }
-                )
+                    ProjectPickerMenu(
+                        projects: appState.projects,
+                        selectedProjectId: selectedProjectId,
+                        strong: true,
+                        onSelect: { selectedProjectId = $0 }
+                    )
+                    Spacer()
+                }
+
+                HStack(spacing: 10) {
+                    Text("Start")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(DS.Palette.ink2)
+                        .frame(width: 90, alignment: .leading)
+
+                    DatePicker("", selection: $start)
+                        .labelsHidden()
+                        .datePickerStyle(.compact)
+                    Spacer()
+                }
+
+                Toggle(isOn: $hasEndDate) {
+                    Text(L10n.editEntryHasEnd)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(DS.Palette.ink2)
+                }
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .tint(DS.Palette.ok)
+
+                if hasEndDate {
+                    HStack(spacing: 10) {
+                        Text(L10n.editEntryEnd)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(DS.Palette.ink2)
+                            .frame(width: 90, alignment: .leading)
+
+                        DatePicker("", selection: $end)
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                        Spacer()
+                    }
+                }
             }
-
-            DatePicker("Start", selection: $start)
-
-            Toggle(L10n.editEntryHasEnd, isOn: $hasEndDate)
-
-            if hasEndDate {
-                DatePicker(L10n.editEntryEnd, selection: $end)
-            }
+            .padding(.bottom, 14)
 
             HStack {
                 Spacer()
                 Button(L10n.editEntryCancel) {
                     dismiss()
                 }
+                .buttonStyle(.dsStandard)
                 .disabled(isSaving)
 
                 Button(L10n.editEntrySave) {
@@ -570,13 +659,13 @@ private struct EntryEditSheet: View {
                         }
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
+                .buttonStyle(DSButtonStyle(kind: .prominent))
                 .disabled(!isValid || isSaving || appState.isLoading)
             }
         }
-        .padding(16)
-        .frame(minWidth: 420)
+        .padding(EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18))
+        .frame(width: 440)
+        .background(DS.Palette.bg)
     }
 }
 
@@ -587,46 +676,49 @@ private struct CreateProjectSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String = ""
-    @State private var selectedColor: String = "#0b83d9"
+    @State private var selectedColor: String = "#c9724c"
     @State private var isSaving: Bool = false
 
     private let presetColors = [
-        "#0b83d9", "#9c27b0", "#e91e63", "#e67e22",
-        "#2ecc71", "#1abc9c", "#3498db", "#8e44ad",
-        "#e74c3c", "#f39c12", "#27ae60", "#16a085"
+        "#c9724c", "#7d6eb8", "#c24e7a", "#d08a3c",
+        "#4aa572", "#3b9a8c", "#4e8bc9", "#7a4ea8",
+        "#c5544a", "#cf9c2e", "#3d9b5e", "#2e8a7a"
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(L10n.createProjectTitle)
-                .font(.headline)
+                .font(DS.Font.sheetTitle)
+                .foregroundStyle(DS.Palette.ink)
+                .padding(.bottom, 12)
 
-            TextField(L10n.createProjectName, text: $name)
-                .textFieldStyle(.roundedBorder)
+            VStack(alignment: .leading, spacing: 10) {
+                TextField(L10n.createProjectName, text: $name)
+                    .textFieldStyle(.ds)
 
-            Text(L10n.createProjectColor)
-                .font(.subheadline.weight(.medium))
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.createProjectColor.uppercased())
+                        .font(DS.Font.formLabel)
+                        .tracking(0.8)
+                        .foregroundStyle(DS.Palette.ink3)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 8), count: 6), spacing: 8) {
-                ForEach(presetColors, id: \.self) { color in
-                    Circle()
-                        .fill(Color(hex: color) ?? .gray)
-                        .frame(width: 28, height: 28)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.primary, lineWidth: selectedColor == color ? 2.5 : 0)
-                        )
-                        .onTapGesture {
-                            selectedColor = color
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 8), count: 6), spacing: 8) {
+                        ForEach(presetColors, id: \.self) { color in
+                            ColorSwatch(hex: color, selected: selectedColor == color) {
+                                selectedColor = color
+                            }
                         }
+                    }
                 }
             }
+            .padding(.bottom, 14)
 
             HStack {
                 Spacer()
                 Button(L10n.editEntryCancel) {
                     dismiss()
                 }
+                .buttonStyle(.dsStandard)
                 .disabled(isSaving)
 
                 Button(L10n.createProjectButton) {
@@ -642,12 +734,41 @@ private struct CreateProjectSheet: View {
                         }
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.accentColor)
+                .buttonStyle(DSButtonStyle(kind: .prominent))
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving || appState.isLoading)
             }
         }
-        .padding(16)
-        .frame(minWidth: 360)
+        .padding(EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18))
+        .frame(width: 380)
+        .background(DS.Palette.bg)
+    }
+}
+
+private struct ColorSwatch: View {
+    let hex: String
+    let selected: Bool
+    let action: () -> Void
+
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .fill(Color(hex: hex) ?? DS.Palette.ink4)
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Circle()
+                        .strokeBorder(DS.Palette.ink, lineWidth: selected ? 2 : 0)
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(DS.Palette.bg, lineWidth: selected ? 1 : 0)
+                        .padding(2)
+                )
+                .scaleEffect(hovered ? 1.08 : 1)
+                .animation(.easeOut(duration: 0.1), value: hovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
     }
 }

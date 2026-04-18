@@ -7,13 +7,13 @@ struct RecentTimeLogSection: View {
     var body: some View {
         if appState.recentEntryGroups.isEmpty {
             Text(L10n.recentLogEmpty)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.vertical, 8)
+                .font(.system(size: 12.5))
+                .foregroundStyle(DS.Palette.ink3)
+                .padding(.vertical, 10)
         } else {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 18) {
                 ForEach(appState.recentEntryGroups) { group in
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 4) {
                         DayGroupHeader(label: group.label, totalSeconds: group.totalSeconds)
 
                         ForEach(group.entries) { entry in
@@ -47,18 +47,21 @@ private struct DayGroupHeader: View {
     let totalSeconds: Int
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .font(DS.Font.dayHead)
+                .foregroundStyle(DS.Palette.ink3)
 
-            VStack { Divider() }
+            Rectangle()
+                .fill(DS.Palette.lineSoft)
+                .frame(height: 0.5)
 
             Text(totalSeconds.formattedDuration)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(DS.Font.daySum)
+                .foregroundStyle(DS.Palette.ink3)
         }
-        .padding(.bottom, 2)
+        .padding(.top, 2)
+        .padding(.bottom, 3)
     }
 }
 
@@ -80,60 +83,62 @@ private struct TimeEntryRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Left color bar
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(Color(hex: projectColorHex ?? "") ?? Color(.separatorColor))
-                .frame(width: 3, height: 36)
-                .padding(.trailing, 10)
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                .fill(Color(hex: projectColorHex ?? "") ?? DS.Palette.ink4)
+                .frame(width: DS.Metric.entryBarWidth)
+                .frame(maxHeight: .infinity)
 
-            // Content
             VStack(alignment: .leading, spacing: 2) {
                 Text(descriptionText)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(DS.Font.entryDesc)
+                    .foregroundStyle(DS.Palette.ink)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     if let projectName {
                         Text(projectName)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
+                            .font(DS.Font.entryMeta)
+                            .foregroundStyle(DS.Palette.ink3)
+                            .lineLimit(1)
 
-                    if projectName != nil {
                         Text("·")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.tertiary)
+                            .font(DS.Font.entryMeta)
+                            .foregroundStyle(DS.Palette.ink4)
                     }
 
                     Text(entry.timeRangeText)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .font(DS.Font.entryMeta)
+                        .foregroundStyle(DS.Palette.ink3)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            // Duration
             if isRunning {
-                Text(L10n.inProgress)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.green)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(DS.Palette.ok)
+                        .frame(width: 6, height: 6)
+                    Text(L10n.inProgress)
+                        .font(DS.Font.runningBadge)
+                        .foregroundStyle(DS.Palette.ok)
+                }
             } else if let seconds = entry.durationSeconds {
                 Text(seconds.formattedDuration)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.primary.opacity(0.7))
+                    .font(DS.Font.entryDur)
+                    .foregroundStyle(DS.Palette.ink.opacity(0.7))
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.vertical, 6)
+        .frame(minHeight: 36)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isHovered ? Color(.quaternaryLabelColor) : .clear)
+            RoundedRectangle(cornerRadius: DS.Metric.rowRadius, style: .continuous)
+                .fill(isHovered ? DS.Palette.card2 : .clear)
         )
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        .contentShape(RoundedRectangle(cornerRadius: DS.Metric.rowRadius))
+        .onHover { isHovered = $0 }
         .onTapGesture {
             onEdit()
         }
