@@ -521,6 +521,13 @@ private struct SettingsSheet: View {
                 }
                 .buttonStyle(DSButtonStyle(kind: .prominent))
             }
+
+            Text(L10n.aboutDisclaimer)
+                .font(.system(size: 10))
+                .foregroundStyle(DS.Palette.ink3)
+                .lineSpacing(1)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
         }
         .padding(EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18))
         .frame(width: 460)

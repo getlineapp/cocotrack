@@ -176,7 +176,7 @@ final class AppState: ObservableObject {
     }
 
     var menuBarTitle: String {
-        guard isTracking else { return "Clockify" }
+        guard isTracking else { return "Cocotrack" }
 
         let description = runningDescription
         let shortDescription: String

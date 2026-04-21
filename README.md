@@ -1,6 +1,8 @@
 # Cocotrack
 
-A lightweight macOS menu bar app for [Clockify](https://clockify.me) time tracking. Start, stop, and manage timers without leaving your workflow.
+A lightweight macOS menu bar time tracker that works with [Clockify](https://clockify.me). Start, stop, and manage timers without leaving your workflow.
+
+> Cocotrack is an independent app by Cocolab sp. z o.o. Not affiliated with, endorsed by, or sponsored by CAKE.com or Clockify.
 
 ## Features
 
@@ -20,18 +22,16 @@ A lightweight macOS menu bar app for [Clockify](https://clockify.me) time tracki
 
 ## Installation
 
-### Download
+### Mac App Store
 
-Grab the latest `.dmg` or `.zip` from the [Releases](../../releases) page.
+(Coming soon.)
 
 ### Build from source
 
 ```bash
-# Clone the repository
 git clone https://github.com/getlineapp/cocotrack.git
 cd cocotrack
 
-# Build and run
 swift build
 swift run
 
@@ -54,20 +54,20 @@ The app uses your default Clockify workspace. To use a different one, enter its 
 
 ```
 Sources/cocotrack/
-├── CocotrackApp.swift      # App entry point, window + menu bar scenes
-├── AppState.swift           # Central state: API calls, timer, settings
-├── ClockifyAPIClient.swift  # Stateless REST client for Clockify API v1
-├── ClockifyModels.swift     # Codable request/response types
-├── Formatters.swift         # ISO 8601 date coding, display formatters
-├── ContentView.swift        # Main window UI (timer, favorites, history)
-├── MenuBarView.swift        # Menu bar popover UI
-├── L10n.swift               # Type-safe localized string constants
+├── CocotrackApp.swift        # App entry point, window + menu bar scenes
+├── AppState.swift            # Central state: API calls, timer, settings
+├── ClockifyAPIClient.swift   # Stateless REST client for Clockify API v1
+├── ClockifyModels.swift      # Codable request/response types
+├── Formatters.swift          # ISO 8601 date coding, display formatters
+├── ContentView.swift         # Main window UI (timer, favorites, history)
+├── MenuBarView.swift         # Menu bar popover UI
+├── L10n.swift                # Type-safe localized string constants
 └── Resources/
     ├── pl.lproj/Localizable.strings  # Polish (default)
     └── en.lproj/Localizable.strings  # English
 ```
 
-The app is built with Swift concurrency (`async/await`) and SwiftUI. `AppState` is the single source of truth, shared to both UI surfaces via `@EnvironmentObject`. No Combine, no external frameworks.
+Built with Swift concurrency (`async/await`) and SwiftUI. `AppState` is the single source of truth, shared to both UI surfaces via `@EnvironmentObject`. No Combine, no external frameworks.
 
 ## License
 

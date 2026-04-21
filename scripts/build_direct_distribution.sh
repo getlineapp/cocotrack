@@ -5,7 +5,7 @@ set -euo pipefail
 
 
 APP_NAME="Cocotrack"
-BUNDLE_ID="me.cocotrack.app"
+BUNDLE_ID="com.cocolab.cocotrack"
 EXECUTABLE_NAME="cocotrack"
 MIN_MACOS_VERSION="13.0"
 VERSION="2.2.0"

@@ -31,7 +31,7 @@
 "status.autoRefresh" = "Auto refresh: 30s";
 
 /* Settings sheet */
-"settings.title" = "Clockify Settings";
+"settings.title" = "Settings";
 "settings.subtitle" = "API configuration is hidden here so the main screen stays focused on timers.";
 "settings.workspaceHint" = "Workspace ID (optional)";
 "settings.close" = "Close";
@@ -83,6 +83,9 @@
 "project.create.button" = "Create";
 "appState.projectUpdated" = "Project updated.";
 "appState.projectCreated" = "Project created.";
+
+/* About / disclaimer */
+"about.disclaimer" = "Cocotrack is an independent app. Not affiliated with, endorsed by, or sponsored by CAKE.com or Clockify.";
 
 /* API errors */
 "api.error.invalidBaseURL" = "Invalid Clockify API URL.";

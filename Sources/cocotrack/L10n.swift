@@ -85,6 +85,9 @@ enum L10n {
     static let projectUpdated = NSLocalizedString("appState.projectUpdated", bundle: .localized, comment: "Status after updating project")
     static let projectCreated = NSLocalizedString("appState.projectCreated", bundle: .localized, comment: "Status after creating project")
 
+    // MARK: - About / disclaimer
+    static let aboutDisclaimer = NSLocalizedString("about.disclaimer", bundle: .localized, comment: "Non-affiliation disclaimer shown in Settings")
+
     // MARK: - API errors
     static let errorInvalidBaseURL = NSLocalizedString("api.error.invalidBaseURL", bundle: .localized, comment: "Invalid base URL error")
     static let errorMissingData = NSLocalizedString("api.error.missingData", bundle: .localized, comment: "Missing data error")
