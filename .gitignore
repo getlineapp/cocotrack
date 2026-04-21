@@ -13,9 +13,27 @@ DerivedData/
 
 # Distribution artifacts
 /dist
+/dist-mas
 
-# Secrets
+# Secrets — never commit crypto material or signing/identity files
+*.p12
+*.p8
+*.key
+*.cer
+*.pem
+*.csr
+*.provisionprofile
+*.mobileprovision
+.appstoreconnect/
 .netrc
+
+# Playwright / browser automation scratch
+.playwright-mcp/
+
+# Ad-hoc debugging artifacts (screenshots + page snapshots captured at repo root)
+/*.png
+/*.yml
+/*.yaml
 
 # Firebase
 firebase-debug.log

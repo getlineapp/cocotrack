@@ -17,7 +17,7 @@ BUNDLE_ID="com.cocolab.cocotrack"
 EXECUTABLE_NAME="cocotrack"
 MIN_MACOS_VERSION="13.0"
 VERSION="${VERSION:-2.2.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-7}"
+BUILD_NUMBER="${BUILD_NUMBER:-8}"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist-mas"
@@ -58,6 +58,13 @@ chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
 RESOURCE_BUNDLE="$BUILD_DIR/arm64-apple-macosx/release/cocotrack_cocotrack.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/cocotrack_cocotrack.bundle"
+  RES_PLIST="$RESOURCES_DIR/cocotrack_cocotrack.bundle/Info.plist"
+  plutil -replace CFBundleIdentifier -string "$BUNDLE_ID.resources" "$RES_PLIST"
+  plutil -replace CFBundleName -string "cocotrack_cocotrack" "$RES_PLIST"
+  plutil -replace CFBundlePackageType -string "BNDL" "$RES_PLIST"
+  plutil -replace CFBundleInfoDictionaryVersion -string "6.0" "$RES_PLIST"
+  plutil -replace CFBundleShortVersionString -string "$VERSION" "$RES_PLIST"
+  plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "$RES_PLIST"
 fi
 
 echo "[3/7] Compiling Assets"
