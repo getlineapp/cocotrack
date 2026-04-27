@@ -48,9 +48,12 @@ struct ContentView: View {
                         .padding(.horizontal, DS.Metric.sectionPaddingH)
                         .padding(.bottom, DS.Metric.bottomPadding)
                 }
+                .frame(maxWidth: DS.Metric.contentMaxWidth)
+                .frame(maxWidth: .infinity)
             }
         }
-        .frame(minWidth: 480, idealWidth: 520, maxWidth: 600, minHeight: 400)
+        .frame(minWidth: 480, idealWidth: 560, minHeight: 400)
+        .background(DS.Palette.bg)
         .sheet(item: $editingEntry) { entry in
             EntryEditSheet(entry: entry) { description, start, end, projectId in
                 await appState.saveEntryEdits(

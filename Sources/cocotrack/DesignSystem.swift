@@ -60,6 +60,7 @@ enum DS {
         static let btnLgRadius: CGFloat = 6
         static let textFieldRadius: CGFloat = 5
         static let sectionPaddingH: CGFloat = 18
+        static let contentMaxWidth: CGFloat = 560
         static let topPadding: CGFloat = 14
         static let bottomPadding: CGFloat = 10
         static let cardPadding: CGFloat = 16
