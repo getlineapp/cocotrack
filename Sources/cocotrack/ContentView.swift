@@ -468,6 +468,7 @@ struct ProjectPickerMenu: View {
 private struct SettingsSheet: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
+    @State private var showBaseURLConfirm: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -493,6 +494,13 @@ private struct SettingsSheet: View {
                         .textFieldStyle(.ds)
                 }
 
+                if appState.requiresBaseURLConfirmation {
+                    Text(L10n.baseURLBadge)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DS.Palette.warn)
+                        .padding(.top, -4)
+                }
+
                 formRow(label: L10n.settingsWorkspaceHint) {
                     TextField(L10n.settingsWorkspaceHint, text: $appState.workspaceOverride)
                         .textFieldStyle(.ds)
@@ -515,8 +523,12 @@ private struct SettingsSheet: View {
                 .buttonStyle(.dsStandard)
 
                 Button(L10n.settingsSaveConnect) {
-                    Task {
-                        await appState.connectAndRefresh()
+                    if appState.requiresBaseURLConfirmation {
+                        showBaseURLConfirm = true
+                    } else {
+                        Task {
+                            await appState.connectAndRefresh()
+                        }
                     }
                 }
                 .buttonStyle(DSButtonStyle(kind: .prominent))
@@ -532,6 +544,18 @@ private struct SettingsSheet: View {
         .padding(EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18))
         .frame(width: 460)
         .background(DS.Palette.bg)
+        .alert(L10n.baseURLConfirmTitle, isPresented: $showBaseURLConfirm) {
+            Button(L10n.baseURLResetAction, role: .cancel) {
+                appState.resetBaseURLToDefault()
+                Task { await appState.connectAndRefresh() }
+            }
+            Button(L10n.baseURLConfirmAction, role: .destructive) {
+                appState.confirmBaseURL()
+                Task { await appState.connectAndRefresh() }
+            }
+        } message: {
+            Text(L10n.baseURLConfirmBody)
+        }
     }
 
     @ViewBuilder

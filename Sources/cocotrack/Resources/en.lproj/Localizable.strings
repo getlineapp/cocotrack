@@ -61,6 +61,14 @@
 "appState.endBeforeStart" = "End time cannot be earlier than start time.";
 "appState.projectNotFound" = "Selected project no longer exists.";
 "appState.projectNameRequired" = "Project name is required.";
+"appState.baseURLNeedsConfirmation" = "Confirm the custom Base URL in Settings before connecting.";
+
+/* Custom base URL confirmation */
+"settings.baseURL.confirm.title" = "Confirm custom Base URL";
+"settings.baseURL.confirm.body" = "You're pointing Cocotrack at a non-Clockify server. Your API key will be sent to that host on every connection. Continue only if you fully trust this address.";
+"settings.baseURL.confirm.action" = "I understand — use this URL";
+"settings.baseURL.reset.action" = "Reset to default Clockify URL";
+"settings.baseURL.custom.badge" = "Custom Base URL — confirmation required";
 
 /* Menu bar */
 "menu.timerActive" = "Timer active";
@@ -94,4 +102,9 @@
 "api.error.http" = "Clockify API error %d: %@";
 "api.error.unknown" = "Unknown API error";
 "api.error.network" = "Network error: %@";
+"api.error.network.offline" = "no internet connection";
+"api.error.network.timeout" = "request timed out";
+"api.error.network.host" = "host unreachable";
+"api.error.network.tls" = "TLS connection failed";
+"api.error.network.generic" = "connection failed";
 "api.error.decoding" = "Could not parse API response.";

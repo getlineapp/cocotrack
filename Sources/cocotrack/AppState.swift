@@ -41,6 +41,7 @@ final class AppState: ObservableObject {
     @Published var apiKey: String
     @Published var baseURL: String
     @Published var workspaceOverride: String
+    @Published private(set) var baseURLConfirmed: Bool
 
     @Published var userName: String = ""
     @Published var userId: String = ""
@@ -72,16 +73,56 @@ final class AppState: ObservableObject {
 
     init() {
         let defaults = UserDefaults.standard
-        self.apiKey = defaults.string(forKey: Keys.apiKey) ?? ""
-        self.baseURL = defaults.string(forKey: Keys.baseURL) ?? "https://api.clockify.me/api/v1"
+
+        if let keychainKey = APIKeyStore.load(), !keychainKey.isEmpty {
+            self.apiKey = keychainKey
+            if defaults.string(forKey: Keys.apiKey) != nil {
+                defaults.removeObject(forKey: Keys.apiKey)
+            }
+        } else if let legacyKey = defaults.string(forKey: Keys.apiKey), !legacyKey.isEmpty {
+            self.apiKey = legacyKey
+            APIKeyStore.save(legacyKey)
+            defaults.removeObject(forKey: Keys.apiKey)
+        } else {
+            self.apiKey = ""
+        }
+
+        self.baseURL = defaults.string(forKey: Keys.baseURL) ?? ClockifyAPIClient.defaultBaseURL
         self.workspaceOverride = defaults.string(forKey: Keys.workspaceOverride) ?? ""
         self.favoriteDescriptions = Set(defaults.stringArray(forKey: Keys.favoriteDescriptions) ?? [])
+        self.baseURLConfirmed = AppState.computeBaseURLConfirmed(
+            baseURL: defaults.string(forKey: Keys.baseURL) ?? ClockifyAPIClient.defaultBaseURL,
+            stored: defaults.string(forKey: Keys.baseURLConfirmed)
+        )
 
-        if !apiKey.isEmpty {
+        if !apiKey.isEmpty && baseURLConfirmed {
             Task {
                 await connectAndRefresh()
             }
         }
+    }
+
+    private static func computeBaseURLConfirmed(baseURL: String, stored: String?) -> Bool {
+        if ClockifyAPIClient.isDefaultBaseURL(baseURL) { return true }
+        return stored == baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var requiresBaseURLConfirmation: Bool {
+        !ClockifyAPIClient.isDefaultBaseURL(baseURL) &&
+            UserDefaults.standard.string(forKey: Keys.baseURLConfirmed) !=
+            baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func confirmBaseURL() {
+        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        UserDefaults.standard.set(trimmed, forKey: Keys.baseURLConfirmed)
+        baseURLConfirmed = true
+    }
+
+    func resetBaseURLToDefault() {
+        baseURL = ClockifyAPIClient.defaultBaseURL
+        UserDefaults.standard.removeObject(forKey: Keys.baseURLConfirmed)
+        baseURLConfirmed = true
     }
 
     deinit {
@@ -223,6 +264,10 @@ final class AppState: ObservableObject {
 
     func connectAndRefresh() async {
         await runLoadingTask {
+            guard baseURLConfirmed else {
+                throw ClockifyAPIError.httpError(statusCode: 400, message: L10n.baseURLNeedsConfirmation)
+            }
+
             persistSettings()
 
             let client = try makeClient()
@@ -455,7 +500,7 @@ final class AppState: ObservableObject {
         } catch is CancellationError {
             // Ignore cancellation and keep current status message.
         } catch {
-            statusMessage = error.localizedDescription
+            statusMessage = AppState.sanitizedErrorMessage(error)
         }
     }
 
@@ -482,7 +527,7 @@ final class AppState: ObservableObject {
 
             restartElapsedTaskIfNeeded()
         } catch {
-            statusMessage = error.localizedDescription
+            statusMessage = AppState.sanitizedErrorMessage(error)
         }
     }
 
@@ -508,6 +553,21 @@ final class AppState: ObservableObject {
         )
     }
 
+    static func sanitizedErrorMessage(_ error: Error) -> String {
+        if let api = error as? ClockifyAPIError {
+            switch api {
+            case .networkError:
+                return L10n.sanitizedNetworkErrorMessage(for: error)
+            default:
+                return api.errorDescription ?? L10n.errorUnknownApi
+            }
+        }
+        if error is URLError {
+            return L10n.sanitizedNetworkErrorMessage(for: error)
+        }
+        return L10n.errorUnknownApi
+    }
+
     private func resolvedWorkspaceId(user: ClockifyUser) -> String? {
         let override = workspaceOverride.trimmingCharacters(in: .whitespacesAndNewlines)
         if !override.isEmpty {
@@ -527,7 +587,13 @@ final class AppState: ObservableObject {
 
     private func persistSettings() {
         let defaults = UserDefaults.standard
-        defaults.set(apiKey, forKey: Keys.apiKey)
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedKey.isEmpty {
+            APIKeyStore.delete()
+        } else {
+            APIKeyStore.save(trimmedKey)
+        }
+        defaults.removeObject(forKey: Keys.apiKey)
         defaults.set(baseURL, forKey: Keys.baseURL)
         defaults.set(workspaceOverride, forKey: Keys.workspaceOverride)
     }
@@ -596,7 +662,7 @@ final class AppState: ObservableObject {
             let context = try contextOrThrow()
             await refreshEntriesWithoutSpinner(context: context)
         } catch {
-            statusMessage = error.localizedDescription
+            statusMessage = AppState.sanitizedErrorMessage(error)
         }
     }
 }
@@ -611,6 +677,7 @@ private extension AppState {
     enum Keys {
         static let apiKey = "clockify.apiKey"
         static let baseURL = "clockify.baseURL"
+        static let baseURLConfirmed = "clockify.baseURL.confirmed"
         static let workspaceOverride = "clockify.workspaceOverride"
         static let favoriteDescriptions = "clockify.favoriteDescriptions"
     }

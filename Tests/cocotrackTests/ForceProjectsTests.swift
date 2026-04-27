@@ -73,4 +73,34 @@ final class ForceProjectsTests: XCTestCase {
     func testStopNoWarnWhenNoForceProjects() {
         XCTAssertFalse(TimerValidation.shouldWarnProjectOnStop(forceProjects: false, runningProjectId: nil))
     }
+
+    // MARK: - Base URL hardening (F2)
+
+    func testHttpsBaseURLAccepted() throws {
+        XCTAssertNoThrow(try ClockifyAPIClient(baseURLString: "https://api.clockify.me/api/v1", apiKey: "k"))
+    }
+
+    func testHttpBaseURLRejectedForRemoteHost() {
+        XCTAssertThrowsError(try ClockifyAPIClient(baseURLString: "http://attacker.tld/api/v1", apiKey: "k"))
+    }
+
+    func testHttpBaseURLAcceptedForLocalhost() throws {
+        XCTAssertNoThrow(try ClockifyAPIClient(baseURLString: "http://localhost:8080/api/v1", apiKey: "k"))
+        XCTAssertNoThrow(try ClockifyAPIClient(baseURLString: "http://127.0.0.1:8080/api/v1", apiKey: "k"))
+    }
+
+    func testFtpSchemeRejected() {
+        XCTAssertThrowsError(try ClockifyAPIClient(baseURLString: "ftp://example.com/api", apiKey: "k"))
+    }
+
+    func testEmptyHostRejected() {
+        XCTAssertThrowsError(try ClockifyAPIClient(baseURLString: "https://", apiKey: "k"))
+    }
+
+    func testIsDefaultBaseURL() {
+        XCTAssertTrue(ClockifyAPIClient.isDefaultBaseURL("https://api.clockify.me/api/v1"))
+        XCTAssertTrue(ClockifyAPIClient.isDefaultBaseURL(" https://api.clockify.me/api/v1 "))
+        XCTAssertFalse(ClockifyAPIClient.isDefaultBaseURL("https://api.clockify.me"))
+        XCTAssertFalse(ClockifyAPIClient.isDefaultBaseURL("https://attacker.tld/api/v1"))
+    }
 }

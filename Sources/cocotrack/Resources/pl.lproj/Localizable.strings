@@ -61,6 +61,14 @@
 "appState.endBeforeStart" = "Czas zakonczenia nie moze byc wczesniejszy niz start.";
 "appState.projectNotFound" = "Wybrany projekt juz nie istnieje.";
 "appState.projectNameRequired" = "Nazwa projektu jest wymagana.";
+"appState.baseURLNeedsConfirmation" = "Potwierdz niestandardowy Base URL w Ustawieniach przed polaczeniem.";
+
+/* Custom base URL confirmation */
+"settings.baseURL.confirm.title" = "Potwierdz niestandardowy Base URL";
+"settings.baseURL.confirm.body" = "Wskazujesz Cocotrack na serwer inny niz Clockify. Twoj API key trafi do tego hosta przy kazdym polaczeniu. Kontynuuj tylko jesli w pelni ufasz temu adresowi.";
+"settings.baseURL.confirm.action" = "Rozumiem — uzyj tego URL";
+"settings.baseURL.reset.action" = "Przywroc domyslny URL Clockify";
+"settings.baseURL.custom.badge" = "Niestandardowy Base URL — wymagane potwierdzenie";
 
 /* Menu bar */
 "menu.timerActive" = "Timer aktywny";
@@ -94,4 +102,9 @@
 "api.error.http" = "Clockify API error %d: %@";
 "api.error.unknown" = "Unknown API error";
 "api.error.network" = "Blad sieci: %@";
+"api.error.network.offline" = "brak polaczenia z internetem";
+"api.error.network.timeout" = "przekroczony czas oczekiwania";
+"api.error.network.host" = "host nieosiagalny";
+"api.error.network.tls" = "blad polaczenia TLS";
+"api.error.network.generic" = "polaczenie nieudane";
 "api.error.decoding" = "Nie udalo sie odczytac odpowiedzi API.";

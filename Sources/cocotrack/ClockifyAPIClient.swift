@@ -48,15 +48,40 @@ struct ClockifyAPIClient {
         guard
             let baseURL = URL(string: trimmedBaseURL),
             let scheme = baseURL.scheme?.lowercased(),
-            scheme == "http" || scheme == "https",
-            baseURL.host != nil
+            let host = baseURL.host,
+            !host.isEmpty
         else {
+            throw ClockifyAPIError.invalidBaseURL
+        }
+
+        let isLoopback = ClockifyAPIClient.isLoopbackHost(host)
+        switch scheme {
+        case "https":
+            break
+        case "http" where isLoopback:
+            break
+        default:
             throw ClockifyAPIError.invalidBaseURL
         }
 
         self.baseURL = baseURL
         self.apiKey = apiKey
         self.session = session
+    }
+
+    static func isLoopbackHost(_ host: String) -> Bool {
+        let normalized = host.lowercased()
+        return normalized == "localhost" ||
+               normalized == "127.0.0.1" ||
+               normalized == "::1" ||
+               normalized == "[::1]"
+    }
+
+    static let defaultBaseURL = "https://api.clockify.me/api/v1"
+
+    static func isDefaultBaseURL(_ string: String) -> Bool {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed == defaultBaseURL
     }
 
     func fetchCurrentUser() async throws -> ClockifyUser {

@@ -62,6 +62,12 @@ enum L10n {
     static let endBeforeStart = NSLocalizedString("appState.endBeforeStart", bundle: .localized, comment: "Error: entry end is before start")
     static let projectNotFound = NSLocalizedString("appState.projectNotFound", bundle: .localized, comment: "Error: selected project is missing")
     static let projectNameRequired = NSLocalizedString("appState.projectNameRequired", bundle: .localized, comment: "Error: project name required")
+    static let baseURLNeedsConfirmation = NSLocalizedString("appState.baseURLNeedsConfirmation", bundle: .localized, comment: "Error: non-default base URL requires confirmation")
+    static let baseURLConfirmTitle = NSLocalizedString("settings.baseURL.confirm.title", bundle: .localized, comment: "Title of confirmation sheet for non-default base URL")
+    static let baseURLConfirmBody = NSLocalizedString("settings.baseURL.confirm.body", bundle: .localized, comment: "Body of confirmation sheet for non-default base URL")
+    static let baseURLConfirmAction = NSLocalizedString("settings.baseURL.confirm.action", bundle: .localized, comment: "Confirm action button for non-default base URL")
+    static let baseURLResetAction = NSLocalizedString("settings.baseURL.reset.action", bundle: .localized, comment: "Reset to default action")
+    static let baseURLBadge = NSLocalizedString("settings.baseURL.custom.badge", bundle: .localized, comment: "Badge shown when using a non-default base URL")
 
     // MARK: - Menu bar
     static let menuTimerActive = NSLocalizedString("menu.timerActive", bundle: .localized, comment: "Menu bar: timer active")
@@ -111,5 +117,33 @@ enum L10n {
 
     static func apiNetworkError(_ message: String) -> String {
         String(format: NSLocalizedString("api.error.network", bundle: .localized, comment: "Network API error"), message)
+    }
+
+    static func sanitizedNetworkErrorMessage(for error: Error) -> String {
+        let urlError: URLError
+        if let direct = error as? URLError {
+            urlError = direct
+        } else if let api = error as? ClockifyAPIError, case .networkError = api,
+                  let nested = (error as NSError).userInfo[NSUnderlyingErrorKey] as? URLError {
+            urlError = nested
+        } else {
+            return apiNetworkError(networkErrorLabel(for: nil))
+        }
+        return apiNetworkError(networkErrorLabel(for: urlError.code))
+    }
+
+    private static func networkErrorLabel(for code: URLError.Code?) -> String {
+        switch code {
+        case .some(.notConnectedToInternet), .some(.networkConnectionLost):
+            return NSLocalizedString("api.error.network.offline", bundle: .localized, comment: "Network: offline")
+        case .some(.timedOut):
+            return NSLocalizedString("api.error.network.timeout", bundle: .localized, comment: "Network: timeout")
+        case .some(.cannotFindHost), .some(.cannotConnectToHost), .some(.dnsLookupFailed):
+            return NSLocalizedString("api.error.network.host", bundle: .localized, comment: "Network: host unreachable")
+        case .some(.secureConnectionFailed), .some(.serverCertificateUntrusted), .some(.serverCertificateHasBadDate), .some(.serverCertificateHasUnknownRoot), .some(.serverCertificateNotYetValid):
+            return NSLocalizedString("api.error.network.tls", bundle: .localized, comment: "Network: TLS error")
+        default:
+            return NSLocalizedString("api.error.network.generic", bundle: .localized, comment: "Network: generic error")
+        }
     }
 }
