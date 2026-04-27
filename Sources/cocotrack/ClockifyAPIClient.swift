@@ -26,12 +26,24 @@ enum ClockifyAPIError: LocalizedError {
     }
 }
 
+extension URLSession {
+    static let cocotrackShared: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.httpMaximumConnectionsPerHost = 4
+        config.timeoutIntervalForRequest = 20
+        config.timeoutIntervalForResource = 60
+        config.waitsForConnectivity = true
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
+}
+
 struct ClockifyAPIClient {
     let baseURL: URL
     let apiKey: String
     private let session: URLSession
 
-    init(baseURLString: String, apiKey: String, session: URLSession = .shared) throws {
+    init(baseURLString: String, apiKey: String, session: URLSession = .cocotrackShared) throws {
         let trimmedBaseURL = baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard
             let baseURL = URL(string: trimmedBaseURL),

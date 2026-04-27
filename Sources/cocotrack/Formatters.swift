@@ -3,10 +3,7 @@ import SwiftUI
 
 extension Date {
     var clockifyISO8601String: String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        return formatter.string(from: self)
+        ClockifyDateFormatters.withFractional.string(from: self)
     }
 
     var shortDateTime: String {
@@ -14,33 +11,41 @@ extension Date {
     }
 }
 
+enum ClockifyDateFormatters {
+    nonisolated(unsafe) static let withFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+
+    nonisolated(unsafe) static let withoutFractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
+}
+
 extension JSONDecoder {
-    static var clockifyDecoder: JSONDecoder {
+    static let clockifyDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
 
-            let formatterWithFractional = ISO8601DateFormatter()
-            formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            formatterWithFractional.timeZone = TimeZone(secondsFromGMT: 0)
-
-            if let date = formatterWithFractional.date(from: value) {
+            if let date = ClockifyDateFormatters.withFractional.date(from: value) {
                 return date
             }
 
-            let formatterWithoutFractional = ISO8601DateFormatter()
-            formatterWithoutFractional.formatOptions = [.withInternetDateTime]
-            formatterWithoutFractional.timeZone = TimeZone(secondsFromGMT: 0)
-
-            if let date = formatterWithoutFractional.date(from: value) {
+            if let date = ClockifyDateFormatters.withoutFractional.date(from: value) {
                 return date
             }
 
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(value)")
         }
         return decoder
-    }
+    }()
 }
 
 extension Color {
@@ -57,11 +62,11 @@ extension Color {
 }
 
 extension JSONEncoder {
-    static var clockifyEncoder: JSONEncoder {
+    static let clockifyEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.withoutEscapingSlashes]
         return encoder
-    }
+    }()
 }
 
 // MARK: - Duration formatting

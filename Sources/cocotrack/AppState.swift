@@ -46,7 +46,9 @@ final class AppState: ObservableObject {
     @Published var userId: String = ""
     @Published var workspaceId: String = ""
 
-    @Published var recentEntries: [ClockifyTimeEntry] = []
+    @Published var recentEntries: [ClockifyTimeEntry] = [] {
+        didSet { recomputeDerived() }
+    }
     @Published var runningEntry: ClockifyTimeEntry?
     @Published var projects: [ClockifyProject] = []
     @Published var timerDraftDescription: String = ""
@@ -54,12 +56,19 @@ final class AppState: ObservableObject {
     @Published var forceProjects: Bool = false
     @Published var statusMessage: String = ""
     @Published var isLoading: Bool = false
-    @Published private(set) var favoriteDescriptions: Set<String>
+    @Published private(set) var favoriteDescriptions: Set<String> {
+        didSet { recomputeDerived() }
+    }
+
+    @Published private(set) var quickStartItems: [QuickStartItem] = []
+    @Published private(set) var recentEntryGroups: [DayGroup] = []
 
     @Published private(set) var elapsedText: String = "00:00:00"
 
     private var elapsedTask: Task<Void, Never>?
     private var autoRefreshTask: Task<Void, Never>?
+    private var lastProjectsFetch: Date?
+    private static let projectsRefreshInterval: TimeInterval = 300
 
     init() {
         let defaults = UserDefaults.standard
@@ -100,30 +109,10 @@ final class AppState: ObservableObject {
         !userId.isEmpty && !workspaceId.isEmpty
     }
 
-    var quickStartTemplates: [QuickStartTemplate] {
-        var seen = Set<String>()
-        var templates: [QuickStartTemplate] = []
-
-        for entry in recentEntries {
-            let trimmed = (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-            guard seen.insert(trimmed.lowercased()).inserted else { continue }
-
-            templates.append(QuickStartTemplate(
-                description: trimmed,
-                lastUsed: entry.timeInterval.start,
-                projectId: entry.projectId
-            ))
-            if templates.count == 10 {
-                break
-            }
-        }
-
-        return templates
-    }
-
-    var favoriteTemplates: [QuickStartTemplate] {
+    private func recomputeDerived() {
         var lastUsedByDescription: [String: (date: Date, projectId: String?)] = [:]
+        var seenForRecent = Set<String>()
+        var recentTemplates: [QuickStartItem] = []
 
         for entry in recentEntries {
             let trimmed = (entry.description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -131,48 +120,66 @@ final class AppState: ObservableObject {
 
             if let current = lastUsedByDescription[trimmed] {
                 if entry.timeInterval.start > current.date {
-                    lastUsedByDescription[trimmed] = (date: entry.timeInterval.start, projectId: entry.projectId)
+                    lastUsedByDescription[trimmed] = (entry.timeInterval.start, entry.projectId)
                 }
             } else {
-                lastUsedByDescription[trimmed] = (date: entry.timeInterval.start, projectId: entry.projectId)
+                lastUsedByDescription[trimmed] = (entry.timeInterval.start, entry.projectId)
+            }
+
+            if recentTemplates.count < 10,
+               seenForRecent.insert(trimmed.lowercased()).inserted {
+                recentTemplates.append(QuickStartItem(
+                    description: trimmed,
+                    lastUsed: entry.timeInterval.start,
+                    projectId: entry.projectId,
+                    isFavorite: false
+                ))
             }
         }
 
-        return favoriteDescriptions
-            .map { description in
+        let favItems = favoriteDescriptions
+            .map { description -> QuickStartItem in
                 let info = lastUsedByDescription[description]
-                return QuickStartTemplate(
+                return QuickStartItem(
                     description: description,
                     lastUsed: info?.date ?? .distantPast,
-                    projectId: info?.projectId
+                    projectId: info?.projectId,
+                    isFavorite: true
                 )
             }
             .sorted { $0.lastUsed > $1.lastUsed }
-    }
-
-    var quickStartItems: [QuickStartItem] {
-        let favItems = favoriteTemplates.map { template in
-            QuickStartItem(
-                description: template.description,
-                lastUsed: template.lastUsed,
-                projectId: template.projectId,
-                isFavorite: true
-            )
-        }
 
         let favDescriptions = Set(favItems.map { $0.description.lowercased() })
-        let recentItems = quickStartTemplates
-            .filter { !favDescriptions.contains($0.description.lowercased()) }
-            .map { template in
-                QuickStartItem(
-                    description: template.description,
-                    lastUsed: template.lastUsed,
-                    projectId: template.projectId,
-                    isFavorite: false
-                )
-            }
+        let filteredRecent = recentTemplates.filter { !favDescriptions.contains($0.description.lowercased()) }
+        quickStartItems = Array((favItems + filteredRecent).prefix(10))
 
-        return Array((favItems + recentItems).prefix(10))
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: recentEntries) { entry in
+            calendar.startOfDay(for: entry.timeInterval.start)
+        }
+
+        let now = Date()
+        let todayStart = calendar.startOfDay(for: now)
+        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
+
+        recentEntryGroups = grouped
+            .sorted { $0.key > $1.key }
+            .map { (date, entries) in
+                let label: String
+                if date == todayStart {
+                    label = L10n.today
+                } else if date == yesterdayStart {
+                    label = L10n.yesterday
+                } else {
+                    label = Self.dayLabelFormatter.string(from: date)
+                }
+
+                let totalSeconds = entries
+                    .compactMap(\.durationSeconds)
+                    .reduce(0, +)
+
+                return DayGroup(date: date, label: label, entries: entries, totalSeconds: totalSeconds)
+            }
     }
 
     var menuBarTitle: String {
@@ -214,36 +221,6 @@ final class AppState: ObservableObject {
         return f
     }()
 
-    var recentEntryGroups: [DayGroup] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: recentEntries) { entry in
-            calendar.startOfDay(for: entry.timeInterval.start)
-        }
-
-        let now = Date()
-        let todayStart = calendar.startOfDay(for: now)
-        let yesterdayStart = calendar.date(byAdding: .day, value: -1, to: todayStart)!
-
-        return grouped
-            .sorted { $0.key > $1.key }
-            .map { (date, entries) in
-                let label: String
-                if date == todayStart {
-                    label = L10n.today
-                } else if date == yesterdayStart {
-                    label = L10n.yesterday
-                } else {
-                    label = Self.dayLabelFormatter.string(from: date)
-                }
-
-                let totalSeconds = entries
-                    .compactMap(\.durationSeconds)
-                    .reduce(0, +)
-
-                return DayGroup(date: date, label: label, entries: entries, totalSeconds: totalSeconds)
-            }
-    }
-
     func connectAndRefresh() async {
         await runLoadingTask {
             persistSettings()
@@ -268,6 +245,7 @@ final class AppState: ObservableObject {
             runningEntry = try await running
             recentEntries = try await recent
             projects = try await projectsList
+            lastProjectsFetch = Date()
             forceProjects = (try? await workspaceInfo)?.workspaceSettings.forceProjects ?? false
             statusMessage = L10n.connectedAs(userName)
 
@@ -286,6 +264,7 @@ final class AppState: ObservableObject {
             runningEntry = try await running
             recentEntries = try await recent
             projects = try await projectsList
+            lastProjectsFetch = Date()
             statusMessage = L10n.dataRefreshed
 
             restartElapsedTaskIfNeeded()
@@ -484,11 +463,23 @@ final class AppState: ObservableObject {
         do {
             async let running = context.client.fetchRunningTimeEntry(workspaceId: context.workspaceId, userId: context.userId)
             async let recent = context.client.fetchRecentTimeEntries(workspaceId: context.workspaceId, userId: context.userId, limit: 50)
-            async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
 
-            runningEntry = try await running
-            recentEntries = try await recent
-            projects = try await projectsList
+            let shouldRefreshProjects: Bool = {
+                guard let last = lastProjectsFetch else { return true }
+                return Date().timeIntervalSince(last) >= Self.projectsRefreshInterval
+            }()
+
+            if shouldRefreshProjects {
+                async let projectsList = context.client.fetchProjects(workspaceId: context.workspaceId)
+                runningEntry = try await running
+                recentEntries = try await recent
+                projects = try await projectsList
+                lastProjectsFetch = Date()
+            } else {
+                runningEntry = try await running
+                recentEntries = try await recent
+            }
+
             restartElapsedTaskIfNeeded()
         } catch {
             statusMessage = error.localizedDescription
@@ -512,7 +503,8 @@ final class AppState: ObservableObject {
 
         return try ClockifyAPIClient(
             baseURLString: baseURL.trimmingCharacters(in: .whitespacesAndNewlines),
-            apiKey: trimmedApiKey
+            apiKey: trimmedApiKey,
+            session: .cocotrackShared
         )
     }
 
@@ -558,9 +550,8 @@ final class AppState: ObservableObject {
         elapsedTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
-                await MainActor.run {
-                    self?.updateElapsedText()
-                }
+                guard !Task.isCancelled else { break }
+                self?.updateElapsedText()
             }
         }
     }
