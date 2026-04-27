@@ -10,7 +10,13 @@ set -euo pipefail
 #
 # Optional:
 #   VERSION / BUILD_NUMBER — override the defaults below
-#   APPLE_ID / APP_SPECIFIC_PASSWORD / TEAM_ID — if set, uploads via `xcrun altool`
+#   ASC_API_KEY_ID / ASC_API_ISSUER_ID — if both set, uploads via `xcrun altool`
+#     using App Store Connect API key authentication. The .p8 key file must be
+#     in one of Apple's standard search paths (e.g. ~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8).
+#     Generate keys at https://appstoreconnect.apple.com/access/api
+#
+# Legacy (deprecated, do not use): APPLE_ID / APP_SPECIFIC_PASSWORD on the command line
+# leaks credentials to `ps` for any user-level process. Use ASC API keys instead.
 
 APP_NAME="Cocotrack"
 BUNDLE_ID="com.cocolab.cocotrack"
@@ -35,6 +41,16 @@ ENTITLEMENTS="$ROOT_DIR/scripts/cocotrack.entitlements"
 
 if [[ ! -f "$PROVISION_PROFILE" ]]; then
   echo "Provisioning profile not found: $PROVISION_PROFILE" >&2
+  exit 1
+fi
+
+# Validate version format to prevent XML injection through heredoc plist generation.
+if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+  echo "ERROR: VERSION must be numeric dotted (e.g. 2.2.0), got: $VERSION" >&2
+  exit 1
+fi
+if [[ ! "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: BUILD_NUMBER must be numeric, got: $BUILD_NUMBER" >&2
   exit 1
 fi
 
@@ -133,16 +149,21 @@ productbuild \
   "$PKG_PATH"
 
 echo "[7/7] Optional upload"
-if [[ -n "${APPLE_ID:-}" && -n "${APP_SPECIFIC_PASSWORD:-}" && -n "${TEAM_ID:-}" ]]; then
+if [[ -n "${APPLE_ID:-}" || -n "${APP_SPECIFIC_PASSWORD:-}" ]]; then
+  echo "ERROR: APPLE_ID/APP_SPECIFIC_PASSWORD env vars are no longer supported." >&2
+  echo "       Passing them to altool exposes credentials via ps. Use ASC_API_KEY_ID/ASC_API_ISSUER_ID instead." >&2
+  exit 1
+fi
+
+if [[ -n "${ASC_API_KEY_ID:-}" && -n "${ASC_API_ISSUER_ID:-}" ]]; then
   xcrun altool --upload-app \
     --file "$PKG_PATH" \
     --type macos \
-    --username "$APPLE_ID" \
-    --password "$APP_SPECIFIC_PASSWORD" \
-    --apple-id "$TEAM_ID"
+    --apiKey "$ASC_API_KEY_ID" \
+    --apiIssuer "$ASC_API_ISSUER_ID"
   echo "Uploaded to App Store Connect."
 else
-  echo "Skipped upload. Use Transporter.app or set APPLE_ID / APP_SPECIFIC_PASSWORD / TEAM_ID to upload via altool."
+  echo "Skipped upload. Use Transporter.app or set ASC_API_KEY_ID / ASC_API_ISSUER_ID to upload via altool."
 fi
 
 echo

@@ -24,6 +24,24 @@ DMG_PATH="$DIST_DIR/$APP_NAME-macOS-v${VERSION}.dmg"
 
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
 NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-}"
+ALLOW_ADHOC="${ALLOW_ADHOC:-0}"
+
+if [[ -z "$SIGN_IDENTITY" && "$ALLOW_ADHOC" != "1" ]]; then
+  echo "ERROR: SIGN_IDENTITY (Developer ID Application certificate) is required." >&2
+  echo "       Set SIGN_IDENTITY=... before running, or pass ALLOW_ADHOC=1 explicitly to opt into ad-hoc signing." >&2
+  echo "       Ad-hoc signed bundles are blocked by Gatekeeper on first run and must never be published." >&2
+  exit 1
+fi
+
+# Validate version format to prevent XML injection through heredoc plist generation.
+if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+  echo "ERROR: VERSION must be numeric dotted (e.g. 2.2.0), got: $VERSION" >&2
+  exit 1
+fi
+if [[ ! "$BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: BUILD_NUMBER must be numeric, got: $BUILD_NUMBER" >&2
+  exit 1
+fi
 
 mkdir -p "$DIST_DIR"
 
